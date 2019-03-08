@@ -77,3 +77,26 @@ print(startButton)
     except:
         print('')
 """
+
+
+
+   
+
+
+#img_gray = rgb2gray(np.array(list(image.getdata())))
+
+#startButton = pyautogui.locateOnScreen('../screenshots/dealer_button.png', region=(0,0,970,810), confidence=0.6)
+
+#img_array = np.array(img)
+
+#img_hsv = colorsys.rgb_to_hsv(img_array[1]/255.,img_array[2]/255.,img_array[3]/255.)
+
+#brain_cont_canny = feature.canny(img_array, sigma=1, low_threshold = 20, high_threshold = 60)
+
+
+#ax.imshow(brain_cont_canny,cmap='gray')
+#plt.show()
+
+#fig, ax = plt.subplots(1, 1, figsize=(12, 12))
+#img_tresh = (img_array>240)
+#ax.imshow(img_tresh, cmap='gray')
