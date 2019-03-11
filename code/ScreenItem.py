@@ -11,6 +11,14 @@ from scipy.stats import beta
 import time
 from extra_functions import getRandDistrParams
 
+def itemExists(scan_img, image_path, grayscale=False, detection_confidence = 0.8):
+        try:
+            #Attempt to locate button
+            box = pyautogui.locate('../data/images/'+image_path, scan_img, grayscale=grayscale, confidence=detection_confidence)
+            return True
+        except:
+            #print('ScreenItem : "'+ self.id +'" is NOT available')
+            return False
 
 class ScreenItem:
     def __init__(self, id_, image_path, detection_confidence):
@@ -20,18 +28,18 @@ class ScreenItem:
         self.box = None
         self.is_available = False
         self.center_pos = None
-    
+        
 
     def locate(self, table_img):
-        try:
+        #try:
             #Attempt to locate button
             self.box = pyautogui.locate('../data/images/'+self.image_path, table_img, confidence=self.detection_confidence)
             self.is_available=True
             self.setCenterPosition()
-            #print('ScreenItem : "'+ self.id +'" is available')
-        except:
+            print('ScreenItem : "'+ self.id +'" is available')
+        #except:
             #print('ScreenItem : "'+ self.id +'" is NOT available')
-            pass
+         #   pass
     def setCenterPosition(self):
         if (not self.is_available):
             #print('ScreenItem : "'+ self.id +'" is NOT available')
@@ -88,7 +96,8 @@ class ScreenItem:
             print('Succesfuly handled movement');
             return
     
-    
+
+
 
 
 class Table(ScreenItem):

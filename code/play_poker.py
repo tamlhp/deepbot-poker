@@ -17,7 +17,7 @@ import pyautogui
 import random
 from scipy.stats import beta
 
-from actions import initializeTable, move_to_button, getTableState, screenTable
+from actions import initializeTable, getTableState, screenTable
 from Button import Button
 #from ScreenItem import DealerButton, Table
 from extra_functions import getRandDistrParams
@@ -28,8 +28,9 @@ take_actions=False
 print('First screen Scan')
 
 
-table_img = screenTable()
+table_img = screenTable(library='xlib')
 table = initializeTable(table_img)
+print('At position: '+str(table.center_pos))
 
 for i in range(60):
 
@@ -41,16 +42,21 @@ for i in range(60):
 
     print('New screen Scan')
     table_img = screenTable()
+   # table_img.show()
+    
+    #table_img_portion = table_img.crop((2, 2, 80,80))
+    #table_img_portion.show()
     fast_fold, fold, check, call, bet, raise_to, dealer_button = getTableState(table_img, table)
     
     
     #see if it is my turn to play
     if(check.is_available or fold.is_available):
         print("### Heros' turn ###")
-        check.moveTo(click=True)
-        fold.moveTo(click=True)
+        #check.moveTo(click=take_actions)
+        #fold.moveTo(click=take_actions)
     else:
-        dealer_button.moveTo(click=False)
+        pass
+        #dealer_button.moveTo(click=False)
       
 
     #Attempt to locate dealer_button
