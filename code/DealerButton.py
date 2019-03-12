@@ -9,6 +9,7 @@ Created on Fri Mar  8 15:01:39 2019
 from ScreenItem import ScreenItem
 from extra_functions import angle_between
 import numpy as np
+import pyautogui
 
 class DealerButton(ScreenItem):
     def __init__(self, id_, image_path, detection_confidence, table_size=6):
@@ -16,6 +17,33 @@ class DealerButton(ScreenItem):
         self.at_player = -1
         self.deg_vect_player = self.getPlayerDegTolerance(nb_players=6)
         
+    def update(self, table, table_img):
+        table_img_portion = table_img.crop((table.box.left,table.box.top,table.box.left+self.box.width,table.box.top+self.box.height))
+        try:
+            box = pyautogui.locate('../data/images/'+self.image_path, table_img_portion, confidence=self.detection_confidence)
+            self.is_available=True
+            if(box!=self.box):
+                self.box=box
+                self.compCenterPosition()
+                self.compPlayerId(nb_players=6,table=table)
+        except:
+            self.is_available=False
+            self.at_player=-1
+    
+    def search(self, table_img):
+        
+        try:
+            #Attempt to locate button
+            self.box = pyautogui.locate('../data/images/'+self.image_path, table_img, confidence=self.detection_confidence)
+            self.is_available=True
+            self.compCenterPosition()
+            self.hasKnownLocation = True
+            self.compPlayerId()
+            print('ScreenItem : "'+ self.id +'" spotted and available')
+        except:
+            #print('ScreenItem : "'+ self.id +'" is NOT available')
+            pass
+    
         #if (table_size==6):
     def getPlayerDegTolerance(self, nb_players):
         if(nb_players==6):
@@ -24,7 +52,7 @@ class DealerButton(ScreenItem):
                            {'right':150,'left':70},{'right':70,'left':350},{'right':350,'left':315}]
         return deg_vect_player
         
-    def getPlayerId(self, nb_players, table):
+    def compPlayerId(self, nb_players, table):
         if (not self.is_available):
             #print(self.id+' is not available')
             return

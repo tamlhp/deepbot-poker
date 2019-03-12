@@ -14,12 +14,44 @@ import pyautogui
 from extra_functions import screenTablePortion
 from ScreenItem import itemExists
 
+class CardHolder(ScreenItem):
+    def __init__(self, id_, image_path, color,box,table,table_img, detection_confidence=0.7, table_size=6):
+        ScreenItem.__init__(self,id_,image_path,detection_confidence)
+        #ScreenItem.__init__(self,id_,image_path,detection_confidence)
+        self.id = id_
+        self.box = box
+        self.center_pos= self.compCenterPosition()
+        
+        self.hero_deg = {'right':315, 'left':250}
+        self.possible_numbers = ['2','3','4','5','6','7','8','9','10','J','Q','K','A']
+        self.confidence_dict= {'2':0.7,'3':0.7,'4':0.7,'5':0.7,'6':0.7,'7':0.7,'8':0.6,'9':0.6,'10':0.6,'J':0.6,'Q':0.6,'K':0.6,'A':0.6}
+        self.size_ref = [80,80]
+        self.table_img = table_img
+        
+        self.color = color
+        self.value = self.compCardValue();
+        self.isHeroCard = self.isHeroCard(table)
+        
+    def update(self, table, table_img):
+        table_img_portion = table_img.crop((table.box.left,table.box.top,table.box.left+self.box.width,table.box.top+self.box.height))
+        try:
+            box = pyautogui.locate('../data/images/'+self.image_path, table_img_portion, confidence=self.detection_confidence)
+            self.is_available=True
+            if(box!=self.box):
+                self.box=box
+                self.compCenterPosition()
+                self.compPlayerId(nb_players=6,table=table)
+        except:
+            self.is_available=False
+            self.at_player=-1
+        
+        
 class Card():
     def __init__(self, id_, color, box, table, table_img):
         #ScreenItem.__init__(self,id_,image_path,detection_confidence)
         self.id = id_
         self.box = box
-        self.center_pos= self.compCenterPosition()
+        self.compCenterPosition()
         
         self.hero_deg = {'right':315, 'left':250}
         self.possible_numbers = ['2','3','4','5','6','7','8','9','10','J','Q','K','A']
@@ -42,7 +74,7 @@ class Card():
         #table_img_portion.show()
         for number in self.possible_numbers:
             #print(str(self.confidence_dict[number]))
-            if(itemExists(scan_img = table_img_portion, image_path = 'cards/card_'+number+'.png',grayscale=True, detection_confidence=0.7)):
+            if(itemExists(scan_img = table_img_portion, image_path = 'cards/card_'+number+'.png',grayscale=False, detection_confidence=0.7)):
                 #print(number)
                 if(value==None):
                     value=number
@@ -53,12 +85,13 @@ class Card():
                     print(value)
         if (value==None):
             print('No number detected!')
-            print(number)
+            #print(number)
         return value
-        
+    
     def compCenterPosition(self):
-        center_pos= [self.box.left+self.box.width/2,self.box.top+self.box.height/2]
-        return center_pos
+        self.center_pos= [self.box.left+self.box.width/2,self.box.top+self.box.height/2]
+        return self.center_pos
+    
         
     def isHeroCard(self, table):
         vect_card = [self.center_pos[0]-table.center_pos[0],self.center_pos[1]-table.center_pos[1]]

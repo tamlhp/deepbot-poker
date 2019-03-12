@@ -25,12 +25,15 @@ from extra_functions import getRandDistrParams
 take_actions=False
 
 
-print('First screen Scan')
 
-
-table_img = screenTable(library='xlib')
-table = initializeTable(table_img)
-print('At position: '+str(table.center_pos))
+table_found = False
+while(not(table_found)):
+    print('First screen Scan, finding table')
+    table_img = screenTable(library='xlib')
+    table = initializeTable(table_img)
+    if(table.center_pos!=None):
+        table_found=True
+        print('Found table at position: '+str(table.center_pos))
 
 for i in range(60):
 
@@ -38,14 +41,11 @@ for i in range(60):
     beta_, alpha_smart, alpha_balanced = getRandDistrParams();
 
     #wait some time (add randomness)
-    time.sleep(1+0.6*beta.rvs(alpha_smart,beta_, size=1)[0])
+    #time.sleep(1+0.6*beta.rvs(alpha_smart,beta_, size=1)[0])
 
-    print('New screen Scan')
+    #Scanning table
     table_img = screenTable()
-   # table_img.show()
-    
-    #table_img_portion = table_img.crop((2, 2, 80,80))
-    #table_img_portion.show()
+    print('New screen Scan')
     fast_fold, fold, check, call, bet, raise_to, dealer_button = getTableState(table_img, table)
     
     
