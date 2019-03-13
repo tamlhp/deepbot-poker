@@ -46,7 +46,10 @@ def initializeTable(table_img):
     bet = Button(id_='Bet', image_path='menu_bet.png', detection_confidence=0.65)
     global dealer_button
     dealer_button = DealerButton(id_='Dealer_button', image_path='dealer_button.png', detection_confidence = 0.8, table=table)
-    print('created buttons')
+    global bet_sizer
+    bet_sizer = Button(id_='Bet_sizer', image_path='bet_sizer.png', detection_confidence = 0.9)
+
+    #print('Created buttons')
     
     #Creating card relative variable
     global all_cards_found
@@ -63,7 +66,7 @@ def initializeTable(table_img):
 
 def updateTableState(table_img, table):        
  
-    screenItems = [fast_fold, fold, check, call, bet, raise_to, dealer_button]
+    screenItems = [fast_fold, fold, check, call, bet, raise_to, dealer_button, bet_sizer]
     
 
     #Search or update all buttons
@@ -91,7 +94,7 @@ def updateTableState(table_img, table):
             player.update(table_img)
     printPlayersInfo()
 
-    return fast_fold, fold, check, call, bet, raise_to, dealer_button
+    return cards, players, fast_fold, fold, check, call, bet, raise_to, dealer_button, bet_sizer
 
 
 

@@ -22,7 +22,10 @@ from Button import Button
 #from ScreenItem import DealerButton, Table
 from extra_functions import getRandDistrParams
 
-take_actions=True
+
+do_moves = True
+do_clicks=True
+click_time = 'random'
 
 
 
@@ -33,7 +36,8 @@ while(not(table_found)):
     table = initializeTable(table_img)
     if(table.center_pos!=None):
         table_found=True
-        print('Found table at position: '+str(table.center_pos))
+        print('Found and initialized table at position: '+str(table.center_pos))
+
 
 for i in range(60):
 
@@ -46,14 +50,34 @@ for i in range(60):
     #Scanning table
     table_img = screenTable()
     print('\n### New screen Scan ###')
-    fast_fold, fold, check, call, bet, raise_to, dealer_button = updateTableState(table_img, table)
+    cards, players, fast_fold, fold, check, call, bet, raise_to, dealer_button, bet_sizer = updateTableState(table_img, table)
     #see if it is my turn to play
     if(check.is_available or fold.is_available):
         print("-> Heros' turn")
-        #check.moveTo(click=take_actions)
-        #fold.moveTo(click=take_actions)
+        
+        hero_cards = [cards[0].value,cards[1].value]
+        aggressive_cards = ['A','K','Q','J']
+
+        if(any(x in hero_cards for x in aggressive_cards) and do_moves):
+            """going for a bet"""
+            bet_sizer.moveTo(click=do_clicks)
+            if(do_clicks):
+                #take short break before clicking
+                if(click_time=='random'):
+                    time.sleep(int(random.choice('111'))*0.2*beta.rvs(alpha_smart,beta_, size=1)[0])
+                pyautogui.click()
+                if(click_time=='random'):
+                    time.sleep(int(random.choice('111'))*0.2*beta.rvs(alpha_smart,beta_, size=1)[0])
+                pyautogui.click()
+            if(bet.is_available):
+                bet.moveTo(click=do_clicks)
+            elif(raise_to.is_available):
+                raise_to.moveTo(click=do_clicks)
+
     else:
+        if(do_moves):
+            dealer_button.moveTo(click=False)
         pass
-        #dealer_button.moveTo(click=False)
+
       
 

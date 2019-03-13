@@ -73,11 +73,14 @@ class ScreenItem:
                 y_aimed = aimed_box.top
             elif(location=='random'):
                 x_aimed = aimed_box.left+(0.1+0.8)*beta.rvs(alpha_smart,beta_, size=1)[0]*aimed_box.width
-                y_aimed = aimed_box.top+(0.1+0.8)*beta.rvs(alpha_smart,beta_, size=1)[0]*aimed_box.height
+                if(self.id=='Bet_sizer'):
+                    y_aimed = aimed_box.top+aimed_box.height/2
+                else:
+                    y_aimed = aimed_box.top+(0.1+0.8)*beta.rvs(alpha_smart,beta_, size=1)[0]*aimed_box.height
        
             #define the easing function (movement motion)
             if(easing_function=='deterministic'):
-                easing_function = pyautogui.easeInQuad
+                easing_function = pyautogui.easeInOutQuad
             elif(easing_function=='random'):
                 #define the easing function
                 easing_function_select = beta.rvs(alpha_smart,beta_, size=1)[0]*5
@@ -98,7 +101,7 @@ class ScreenItem:
             if(move_time=='deterministic'):
                 time_to_move = 0.6
             elif(move_time=='random'):
-                time_to_move = 0.3+1.2*beta.rvs(alpha_smart,beta_, size=1)[0]
+                time_to_move = 0.4+1.1*beta.rvs(alpha_smart,beta_, size=1)[0]
 
 
             pyautogui.moveTo(x_aimed, y_aimed, time_to_move, easing_function)
