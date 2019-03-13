@@ -11,19 +11,6 @@ from scipy.stats import beta
 import time
 from extra_functions import getRandDistrParams
 
-def itemExists(scan_img, image_path, grayscale=False, detection_confidence = 0.8):
-        box = pyautogui.locate('../data/images/'+image_path, scan_img, grayscale=grayscale, confidence=detection_confidence)
-      #  print(box)
-        try:
-            #Attempt to locate button
-            box = pyautogui.locate('../data/images/'+image_path, scan_img, grayscale=grayscale, confidence=detection_confidence)
-            if(box!=None):
-                return True
-            else:
-                return False
-        except:
-            #print('ScreenItem : "'+ self.id +'" is NOT available')
-            return False
 
 class ScreenItem:
     def __init__(self, id_, image_path, detection_confidence):
@@ -42,10 +29,11 @@ class ScreenItem:
         try:
             #Attempt to locate button
             self.box = pyautogui.locate('../data/images/'+self.image_path, table_img, confidence=self.detection_confidence)
-            self.is_available=True
-            self.compCenterPosition()
-            self.hasKnownLocation = True
-            print('ScreenItem : "'+ self.id +'" spotted and available')
+            if(self.box!=None):
+                self.is_available=True
+                self.compCenterPosition()
+                self.hasKnownLocation = True
+                print('[ScreenItem] : "'+ self.id +'" spotted and available')
         except:
             #print('ScreenItem : "'+ self.id +'" is NOT available')
             pass
@@ -69,25 +57,30 @@ class ScreenItem:
         return
          
          
-    def moveTo(self, click=False, easing_function='deterministic'):
-        if (not self.is_available):
-            #print(self.id+' is not available')
-            return
-        else:
-            
-            if(easing_function=='random'):
-                #print('Handling movement');
-                #define the beta distribution parameters, from where the randomness of the agent is drawn
+    def moveTo(self, click=False, location='random', easing_function='deterministic', move_time='random', click_time='random'):
+        if (self.is_available):                      
+            #print('Handling movement');
+            #define the beta distribution parameters, from where the randomness of the agent is drawn
+            if(location=='random' or easing_function=='random' or move_time=='random' or click_time =='random'):
                 beta_, alpha_smart, alpha_balanced = getRandDistrParams();
-                
-                #define aimed location (with randomness)
-                aimed_box = self.box
-                x_aimed = aimed_box.left+(0.1+0.8)*beta.rvs(alpha_balanced,beta_, size=1)[0]*aimed_box.width
-                y_aimed = aimed_box.top+(0.1+0.8)*beta.rvs(alpha_balanced,beta_, size=1)[0]*aimed_box.height
-                #define time to move (between 0.1 and 2 seconds)
-                time_to_move = 0.1+2.4*beta.rvs(alpha_smart,beta_, size=1)[0]
+            
+
+            aimed_box = self.box         
+            
+            #define the location to go
+            if(location=='deterministic'):
+                x_aimed = aimed_box.left
+                y_aimed = aimed_box.top
+            elif(location=='random'):
+                x_aimed = aimed_box.left+(0.1+0.8)*beta.rvs(alpha_smart,beta_, size=1)[0]*aimed_box.width
+                y_aimed = aimed_box.top+(0.1+0.8)*beta.rvs(alpha_smart,beta_, size=1)[0]*aimed_box.height
+       
+            #define the easing function (movement motion)
+            if(easing_function=='deterministic'):
+                easing_function = pyautogui.easeInQuad
+            elif(easing_function=='random'):
                 #define the easing function
-                easing_function_select = beta.rvs(alpha_balanced,beta_, size=1)[0]*5
+                easing_function_select = beta.rvs(alpha_smart,beta_, size=1)[0]*5
                 if(easing_function_select<=1):
                     easing_function = pyautogui.easeInBounce;
                     #easing_function = pyautogui.easeInQuad;
@@ -100,24 +93,28 @@ class ScreenItem:
                 elif(easing_function_select<=5):
                     easing_function = pyautogui.easeInElastic;   
                     #easing_function = pyautogui.easeOutQuad;
-                pyautogui.moveTo(x_aimed, y_aimed, time_to_move, easing_function)  
+                
+            #define time to move (between 0.1 and 2 seconds)
+            if(move_time=='deterministic'):
+                time_to_move = 0.6
+            elif(move_time=='random'):
+                time_to_move = 0.3+1.2*beta.rvs(alpha_smart,beta_, size=1)[0]
 
 
-            
-            
-            elif(easing_function=='deterministic'):
-                easing_function = pyautogui.easeInQuad
-                pyautogui.moveTo(x_aimed, y_aimed, time_to_move, easing_function)
+            pyautogui.moveTo(x_aimed, y_aimed, time_to_move, easing_function)
         
             
             if(click):
                 #take short break before clicking
-                time.sleep(int(random.choice('011'))*0.8*beta.rvs(alpha_balanced,beta_, size=1)[0])
+                if(click_time=='random'):
+                    time.sleep(int(random.choice('011'))*0.5*beta.rvs(alpha_smart,beta_, size=1)[0])
                 pyautogui.click()
             print('Succesfuly handled movement');
             return
-    
 
+        else:
+            print("[Warning] Tried to move to '" +self.id+"', but it is unavailable")
+            return
 
 
 

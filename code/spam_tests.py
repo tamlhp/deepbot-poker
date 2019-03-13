@@ -10,19 +10,61 @@ Created on Mon Feb 25 12:17:48 2019
 
 #!/usr/bin/env python
 # encoding: utf-8
-"""
-screengrab.py
 
-Created by Alex Snet on 2011-10-10.
-Copyright (c) 2011 CodeTeam. All rights reserved.
+
+
+import pytesseract
+from PIL import Image, ImageEnhance, ImageFilter
+
+
+text = pytesseract.image_to_string(Image.open("../data/table-flop.png"), lang='eng',
+                        config='--psm 10 --oem 3 -c tessedit_char_whitelist=0123456789')
+
+
+
+"""
+###CV2 PYTESSERACT OCR
+import cv2
+import pytesseract
+from PIL import Image
+
+
+
+path = '../data/table-flop.png'
+
+image = cv2.imread(path)
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+
+ 
+scale_percent = 100 # percent of original size
+width = int(image.shape[1] * scale_percent / 100)
+height = int(image.shape[0] * scale_percent / 100)
+dim = (width, height) 
+
+gray = cv2.resize(gray, dim, interpolation = cv2.INTER_AREA) 
+
+temp = "2"
+# If user enter 1, Process Threshold or if user enters 2, then process medianBlur. Else, do nothing.
+if temp == "1":
+    gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+elif temp == "2":
+    gray = cv2.medianBlur(gray, 3)
+
+
+filename = "{}.png".format("temp")
+cv2.imwrite(filename, gray)
+
+text = pytesseract.image_to_string(Image.open(filename))
+print(text)
+"""
+
+
 """
 from PIL import Image
 
 import sys
 import os
-
-
-
 
 class screengrab:
     def __init__(self):
@@ -107,7 +149,7 @@ if __name__ == '__main__':
     s = screengrab()
     screen = s.screen()
     screen.show()
-
+"""
 
 """
 ##See if cards are dealt
@@ -255,4 +297,18 @@ def move_to_button(button_):
     #pyautogui.click()
     print('Succesfuly handled movement');
     return
+"""
+
+
+"""
+class HeroCards():
+    def __init__(self, card1, card2):
+        self.card1 = card1
+        self.card2 = card2
+        
+        self.cards = [{'value':card1.value, 'color':card1.color}, {'value':card2.value,'color':card2.color}]
+        print("## Hero has: "+self.cards[0]["value"]+ " of "+self.cards[0]["color"]+ " ##")
+        print("## And: "+self.cards[1]["value"]+ " of "+ self.cards[1]["color"] + " ##")
+              
+              
 """

@@ -10,6 +10,7 @@ import random
 import numpy as np
 from Xlib import display, X
 from PIL import Image #PIL
+import pyautogui
 
 def getRandDistrParams():
     beta_=random.uniform(0.1,5);
@@ -30,3 +31,17 @@ def screenTablePortion(left=0,top=0,width=0,height=0):
     raw = root.get_image(left, top, width,height, X.ZPixmap, 0xffffffff)
     table_img = Image.frombytes("RGB", (width, height), raw.data, "raw", "BGRX").convert('L')
     return table_img
+
+def itemExists(scan_img, image_path, grayscale=False, detection_confidence = 0.8):
+       # box = pyautogui.locate('../data/images/'+image_path, scan_img, grayscale=grayscale, confidence=detection_confidence)
+      #  print(box)
+        try:
+            #Attempt to locate button
+            box = pyautogui.locate('../data/images/'+image_path, scan_img, grayscale=grayscale, confidence=detection_confidence)
+            if(box!=None):
+                return True
+            else:
+                return False
+        except:
+            #print('ScreenItem : "'+ self.id +'" is NOT available')
+            return False
