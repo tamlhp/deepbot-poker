@@ -23,7 +23,7 @@ from Button import Button
 from extra_functions import getRandDistrParams
 
 
-do_moves = True
+do_moves = False
 do_clicks=True
 click_time = 'random'
 
