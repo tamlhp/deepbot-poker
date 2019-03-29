@@ -1,0 +1,7 @@
+
+## start gui
+pypokergui serve /Users/ishikota/poker/poker_conf.yaml --port 8000 --speed moderate
+
+
+#poker engine library
+/home/cyril/Programs/anaconda3/envs/poker_simul/lib/python3.5/site-packages/pypokerengine

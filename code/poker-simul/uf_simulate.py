@@ -8,8 +8,8 @@ Created on Fri Mar 22 17:20:18 2019
 
 from pypokerengine.api.game import start_poker, setup_config
 
-from callbot import CallBot
-from databloggerbot import DataBloggerBot
+from bot_CallBot import CallBot
+from bot_databloggerBot import DataBloggerBot
 import numpy as np
 
 if __name__ == '__main__':
