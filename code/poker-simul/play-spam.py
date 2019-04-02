@@ -12,6 +12,13 @@ from bot_CallBot import  CallBot
 from bot_HandEvaluatingBot import HandEvaluatingBot, estimate_flop_odd, estimate_win_rate
 from bot_PStratBot import PStratBot
 
+
+
+from pypokerengine.engine.hand_evaluator import HandEvaluator
+from pypokerengine.players import BasePokerPlayer
+from pypokerengine.utils.card_utils import _pick_unused_card, _fill_community_card, gen_cards
+
+import itertools
 """
 print(estimate_win_rate(1000,2,['HA', 'SK']))
 print(estimate_win_rate(1000,2,['HA', 'SK']))
@@ -19,16 +26,59 @@ print(estimate_win_rate(1000,2,['HA', 'SK']))
 print(estimate_flop_odd(1000,2,['HA', 'SK']))
 print(estimate_flop_odd(1000,2,['HA', 'SK']))
 """
+#HandEvaluator.eval_hand(gen_cards(['H2','S2']),gen_cards(['H3','S3','H7']))
 
 
-config = setup_config(max_round=100, initial_stack=300, small_blind_amount=5)
+
+rank_list = [card.rank for card in gen_cards(['HA','HK'] + ['DQ','DJ','S6','C7'])]
+rank_list = list(set(rank_list))
+if(14 in rank_list): rank_list.append(1)
+nb_neighbors = {}
+cards_with_two_neighbors = []
+for a, b in itertools.combinations(rank_list, 2):
+    if (a not in nb_neighbors.keys()): nb_neighbors[a]=0
+    if (b not in nb_neighbors.keys()): nb_neighbors[b]=0  
+
+    if(abs(a-b) == 1):
+        nb_neighbors[a]+=1
+        nb_neighbors[b]+=1
+        
+print(nb_neighbors)
+ #at least 2 cards have 2 neighbors
+if sum([x==2 for x in nb_neighbors.values()])>=2:
+    cards_with_two_neighbors = [d for d, s in zip(nb_neighbors.keys(), [x==2 for x in nb_neighbors.values()]) if s]
+    print(cards_with_two_neighbors)
+    if(abs(cards_with_two_neighbors[0]-cards_with_two_neighbors[1])==1):
+        print('yes')
+    else:
+        print('no')
+else:
+    print('not')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+config = setup_config(max_round=1000, initial_stack=3000, small_blind_amount=5)
 config.register_player(name="p1", algorithm=CallBot())
 config.register_player(name="p2", algorithm=CallBot())
 config.register_player(name="p3", algorithm=CallBot())
 config.register_player(name="p4", algorithm=PStratBot())
 game_result = start_poker(config, verbose=0)
 
-
+"""
 
 
 
