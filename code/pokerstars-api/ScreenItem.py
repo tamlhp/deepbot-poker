@@ -13,9 +13,9 @@ from extra_functions import getRandDistrParams
 
 
 class ScreenItem:
-    def __init__(self, id_, image_path, detection_confidence):
+    def __init__(self, id_, image_file, detection_confidence):
         self.id = id_
-        self.image_path = image_path
+        self.image_file = image_file
         self.detection_confidence = detection_confidence
         self.box = None
         self.is_available = False
@@ -24,11 +24,11 @@ class ScreenItem:
         self.hasKnownLocation = False
 
 
-            
+
     def search(self, table_img):
         try:
             #Attempt to locate button
-            self.box = pyautogui.locate('../data/images/'+self.image_path, table_img, confidence=self.detection_confidence)
+            self.box = pyautogui.locate('../../data/images/menu/'+self.image_file, table_img, confidence=self.detection_confidence)
             if(self.box!=None):
                 self.is_available=True
                 self.compCenterPosition()
@@ -37,7 +37,7 @@ class ScreenItem:
         except:
             #print('ScreenItem : "'+ self.id +'" is NOT available')
             pass
-        
+
     def compCenterPosition(self):
         if (not self.is_available):
             #print('ScreenItem : "'+ self.id +'" is NOT available')
@@ -45,8 +45,8 @@ class ScreenItem:
         else:
              self.center_pos= [self.box.left+self.box.width/2,self.box.top+self.box.height/2]
         return
-    
-    def printPosition(self):    
+
+    def printPosition(self):
         if (not self.is_available):
             #print('ScreenItem : "'+ self.id +'" is NOT available')
             pass
@@ -55,18 +55,18 @@ class ScreenItem:
                 +'] \n [width: '+str(self.box.width)+', height: '+str(self.box.height)
                 +'] \n [center_x: '+str(self.center_pos[0])+', center_y: '+str(self.center_pos[1])+']')
         return
-         
-         
+
+
     def moveTo(self, click=False, location='random', easing_function='deterministic', move_time='random', click_time='random'):
-        if (self.is_available):                      
+        if (self.is_available):
             #print('Handling movement');
             #define the beta distribution parameters, from where the randomness of the agent is drawn
             if(location=='random' or easing_function=='random' or move_time=='random' or click_time =='random'):
                 beta_, alpha_smart, alpha_balanced = getRandDistrParams();
-            
 
-            aimed_box = self.box         
-            
+
+            aimed_box = self.box
+
             #define the location to go
             if(location=='deterministic'):
                 x_aimed = aimed_box.left
@@ -77,7 +77,7 @@ class ScreenItem:
                     y_aimed = aimed_box.top+aimed_box.height/2
                 else:
                     y_aimed = aimed_box.top+(0.1+0.8)*beta.rvs(alpha_smart,beta_, size=1)[0]*aimed_box.height
-       
+
             #define the easing function (movement motion)
             if(easing_function=='deterministic'):
                 easing_function = pyautogui.easeInOutQuad
@@ -94,9 +94,9 @@ class ScreenItem:
                 elif(easing_function_select<=4):
                     easing_function = pyautogui.easeOutQuad;
                 elif(easing_function_select<=5):
-                    easing_function = pyautogui.easeInElastic;   
+                    easing_function = pyautogui.easeInElastic;
                     #easing_function = pyautogui.easeOutQuad;
-                
+
             #define time to move (between 0.1 and 2 seconds)
             if(move_time=='deterministic'):
                 time_to_move = 0.6
@@ -105,8 +105,8 @@ class ScreenItem:
 
 
             pyautogui.moveTo(x_aimed, y_aimed, time_to_move, easing_function)
-        
-            
+
+
             if(click):
                 #take short break before clicking
                 if(click_time=='random'):
@@ -122,12 +122,9 @@ class ScreenItem:
 
 
 class Table(ScreenItem):
-    def __init__(self, id_, image_path, detection_confidence, table_size=6):
-        ScreenItem.__init__(self,id_,image_path,detection_confidence)
-        
-        #self.center = self.getTableCenter
-    
-   # def getTableCenter(self):
-   
+    def __init__(self, id_, image_file, detection_confidence, table_size=6):
+        ScreenItem.__init__(self,id_,image_file,detection_confidence)
 
-        
+        #self.center = self.getTableCenter
+
+   # def getTableCenter(self):

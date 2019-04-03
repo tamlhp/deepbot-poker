@@ -24,7 +24,7 @@ from extra_functions import getRandDistrParams
 
 
 do_moves = False
-do_clicks=True
+do_clicks = False
 click_time = 'random'
 
 
@@ -37,7 +37,8 @@ while(not(table_found)):
     if(table.center_pos!=None):
         table_found=True
         print('Found and initialized table at position: '+str(table.center_pos))
-
+    else:
+        time.sleep(1)
 
 for i in range(60):
 
@@ -54,7 +55,7 @@ for i in range(60):
     #see if it is my turn to play
     if(check.is_available or fold.is_available):
         print("-> Heros' turn")
-        
+
         hero_cards = [cards[0].value,cards[1].value]
         aggressive_cards = ['A','K','Q','J']
 
@@ -73,11 +74,10 @@ for i in range(60):
                 bet.moveTo(click=do_clicks)
             elif(raise_to.is_available):
                 raise_to.moveTo(click=do_clicks)
+            else:
+                fold.moveTo(click=do_clicks)
 
-    else:
-        if(do_moves):
-            dealer_button.moveTo(click=False)
-        pass
-
-      
-
+        else:
+            if(do_clicks):
+                dealer_button.moveTo(click=False)
+            pass
