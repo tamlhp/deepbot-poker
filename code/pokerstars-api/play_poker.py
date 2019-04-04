@@ -22,6 +22,12 @@ from Button import Button
 #from ScreenItem import DealerButton, Table
 from extra_functions import getRandDistrParams
 
+import constants
+import glob_file
+
+
+constants.init()
+glob_file.init()
 
 do_moves = False
 do_clicks = False
@@ -29,16 +35,7 @@ click_time = 'random'
 
 
 
-table_found = False
-while(not(table_found)):
-    print('Looking for table')
-    table_img = screenTable(library='xlib')
-    table = initializeTable(table_img)
-    if(table.center_pos!=None):
-        table_found=True
-        print('Found and initialized table at position: '+str(table.center_pos))
-    else:
-        time.sleep(1)
+initializeTable()
 
 for i in range(60):
 
@@ -47,21 +44,18 @@ for i in range(60):
 
     #wait some time (add randomness)
     time.sleep(0.2+0.6*beta.rvs(alpha_smart,beta_, size=1)[0])
+    updateTableState()
 
-    #Scanning table
-    table_img = screenTable()
-    print('\n### New screen Scan ###')
-    cards, players, fast_fold, fold, check, call, bet, raise_to, dealer_button, bet_sizer = updateTableState(table_img, table)
     #see if it is my turn to play
-    if(check.is_available or fold.is_available):
+    if(glob_file.check.is_available or glob_file.fold.is_available):
         print("-> Heros' turn")
 
-        hero_cards = [cards[0].value,cards[1].value]
+        hero_cards = [glob_file.cards[0].value,glob_file.cards[1].value]
         aggressive_cards = ['A','K','Q','J']
 
         if(any(x in hero_cards for x in aggressive_cards) and do_moves):
             """going for a bet"""
-            bet_sizer.moveTo(click=do_clicks)
+            glob_file.bet_sizer.moveTo(click=do_clicks)
             if(do_clicks):
                 #take short break before clicking
                 if(click_time=='random'):
@@ -71,13 +65,13 @@ for i in range(60):
                     time.sleep(int(random.choice('111'))*0.2*beta.rvs(alpha_smart,beta_, size=1)[0])
                 pyautogui.click()
             if(bet.is_available):
-                bet.moveTo(click=do_clicks)
+                glob_file.bet.moveTo(click=do_clicks)
             elif(raise_to.is_available):
-                raise_to.moveTo(click=do_clicks)
+                glob_file.raise_to.moveTo(click=do_clicks)
             else:
-                fold.moveTo(click=do_clicks)
+                glob_file.fold.moveTo(click=do_clicks)
 
         else:
             if(do_clicks):
-                dealer_button.moveTo(click=False)
+                glob_file.dealer_button.moveTo(click=False)
             pass

@@ -10,40 +10,82 @@ import pyautogui
 from scipy.stats import beta
 import time
 from extra_functions import getRandDistrParams
+from Box import Box
 
 
 class ScreenItem:
-    def __init__(self, id_, image_file, detection_confidence):
+    def __init__(self, id_, image_file_path, detection_confidence):
         self.id = id_
-        self.image_file = image_file
+        self.image_file_path = image_file_path
         self.detection_confidence = detection_confidence
         self.box = None
         self.is_available = False
         self.center_pos = None
-        self.search_margin = 1/4
-        self.hasKnownLocation = False
+        #self.search_margin = 1/4
+        #self.hasKnownLocation = False
+        self.relevant_box = 'ALL'
+        self.never_spotted = True
 
-
+    def update(self, table_img):
+        spotted = self.search(table_img)
+        self.updateState(spotted)
+        self.childUpdateState(table_img)
+        if spotted:
+            self.never_spotted = False
+        return
 
     def search(self, table_img):
+        #print(self.relevant_box)
+        if(self.relevant_box=='ALL'): searched_img = table_img
+        else: searched_img = table_img.crop((self.relevant_box.left,self.relevant_box.top,self.relevant_box.left+self.relevant_box.width,self.relevant_box.top+self.relevant_box.height))
+        #print(box_relative)
+        #searched_img.show()
         try:
-            #Attempt to locate button
-            self.box = pyautogui.locate('../../data/images/menu/'+self.image_file, table_img, confidence=self.detection_confidence)
+            #Attempt to locate screen item
+            self.box = pyautogui.locate(self.image_file_path, searched_img, confidence=self.detection_confidence)
+            if(self.relevant_box!='ALL'): self.box= Box(self.box.left+self.relevant_box.left, self.box.top+self.relevant_box.top, self.box.width, self.box.height)
             if(self.box!=None):
-                self.is_available=True
-                self.compCenterPosition()
-                self.hasKnownLocation = True
-                print('[ScreenItem] : "'+ self.id +'" spotted and available')
+                spotted = True
+            else:
+                spotted = False
         except:
+            spotted = False
             #print('ScreenItem : "'+ self.id +'" is NOT available')
-            pass
+
+        return spotted
+
+
+
+    def updateState(self, spotted):
+        if spotted:
+            if self.never_spotted:
+                pass
+                #print('[ScreenItem] : "'+ str(self.id) +'" spotted and available')
+            elif not(self.is_available):
+                #print("[ScreenItem] "+str(self.id)+" became available")
+                pass
+            self.is_available = True
+        else:
+            if self.is_available:
+                #print("[ScreenItem] "+str(self.id)+" became unavailable")
+                pass
+            self.is_available = False
+        return
+
+    def childUpdateState(self):
+        return
+
+    def set_relevant_box(self, relevant_box):
+        self.relevant_box = relevant_box
+        return
 
     def compCenterPosition(self):
-        if (not self.is_available):
-            #print('ScreenItem : "'+ self.id +'" is NOT available')
-            pass
+        if (True):#(self.box!=None):
+            self.center_pos= [self.box.left+self.box.width/2,self.box.top+self.box.height/2]
         else:
-             self.center_pos= [self.box.left+self.box.width/2,self.box.top+self.box.height/2]
+            print('[Error] Tried to compute center position of ScreenItem "'+ self.id +'" but it is NOT available')
+            pass
+
         return
 
     def printPosition(self):
@@ -118,13 +160,3 @@ class ScreenItem:
         else:
             print("[Warning] Tried to move to '" +self.id+"', but it is unavailable")
             return
-
-
-
-class Table(ScreenItem):
-    def __init__(self, id_, image_file, detection_confidence, table_size=6):
-        ScreenItem.__init__(self,id_,image_file,detection_confidence)
-
-        #self.center = self.getTableCenter
-
-   # def getTableCenter(self):

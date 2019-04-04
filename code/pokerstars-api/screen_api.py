@@ -12,106 +12,87 @@ import pyautogui
 import time
 from scipy.stats import beta
 from Button import Button
-from ScreenItem import Table
+from Table import Table
 from DealerButton import DealerButton
 from Card import Card
 import numpy as np
 import sys
 from extra_functions import itemExists
 import os
+from functools import reduce
+
 from Player import Player
+from NumberContainer import NumberContainer
+from Number import Number
 
-all_cards_found = False
-all_players_found = False
-players = []
-cards = []
+import constants
+import glob_file
 
-def initializeTable(table_img):
-    table = Table(id_='Table', image_file = 'table.png', detection_confidence=0.5)
-    table.search(table_img)
+def initializeTable():
+    table_found = False
+    while(not(table_found)):
+        print('Looking for table')
+        table_img = screenTable(library='xlib')
+        glob_file.table.update(table_img)
+        if(not(glob_file.table.never_spotted)):
+            table_found=True
+            glob_file.dealer_button.set_relevant_box(glob_file.table.box)
+            glob_file.dealer_button.set_table_center(glob_file.table.center_pos)
+            print('Found and initialized table at position: '+str(glob_file.table.center_pos))
+        else:
+            time.sleep(1)
 
 
-    #Creating buttons
-    global fast_fold
-    fast_fold = Button(id_='Fast_fold', image_file='menu_fast_fold.png', detection_confidence=0.8)
-    global fold
-    fold = Button(id_='Fold', image_file='menu_fold.png', detection_confidence=0.8)
-    global check
-    check = Button(id_='Check', image_file='menu_check.png', detection_confidence=0.8)
-    global call
-    call = Button(id_='Call', image_file='menu_call.png', detection_confidence=0.65)
-    global raise_to
-    raise_to = Button(id_='Raise_to', image_file='menu_raise_to.png', detection_confidence=0.7)
-    global bet
-    bet = Button(id_='Bet', image_file='menu_bet.png', detection_confidence=0.65)
-    global dealer_button
-    dealer_button = DealerButton(id_='Dealer_button', image_file='dealer_button.png', detection_confidence = 0.8, table=table)
-    global bet_sizer
-    bet_sizer = Button(id_='Bet_sizer', image_file='bet_sizer.png', detection_confidence = 0.9)
+    #num_container = NumberContainer(id_='Number_container', image_file=None, detection_confidence = constants.NUMBERS_BET_DET_CONFIDENCE)
+    #num_container.search(table_img)
+    return
 
-    #print('Created buttons')
+def updateTableState():
 
-    #Creating card relative variable
-    global all_cards_found
-    all_cards_found = False
-    global cards
-    cards = []
+    #new table scan
+    print('\n### New screen Scan ###')
+    table_img = screenTable()
 
-    #Creating player relative variables
-    global all_players_found
-    all_players_found = False
-    global players
-    players = []
-    return table
-
-def updateTableState(table_img, table):
-
-    screenItems = [fast_fold, fold, check, call, bet, raise_to, dealer_button, bet_sizer]
-
+    unique_screen_items = [glob_file.fast_fold, glob_file.fold, glob_file.check, glob_file.call,
+        glob_file.bet, glob_file.raise_to, glob_file.bet_sizer, glob_file.dealer_button]
 
     #Search or update all buttons
-    for screenItem in screenItems:
-        if(not(screenItem.hasKnownLocation)):
-            screenItem.search(table_img)
-        else:
-            screenItem.update(table_img)
+    for screen_item in unique_screen_items:
+        screen_item.update(table_img)
 
-    #print(all_cards_found)
     #Search for or update all cards
-    if (not(all_cards_found)):
-        searchAllOpenCards(table, table_img)
+    if (not(glob_file.all_cards_found)):
+        searchAllOpenCards(table_img)
     else:
-        for card in cards:
-            card.update()
+        for card in glob_file.cards:
+            card.update(table_img)
     printCardsInfo()
 
-    #print(all_players_found)
     #Search for or update all players
-    if(not(all_players_found)):
+    if(not(glob_file.all_players_found)):
         searchAllPlayers(table_img)
     else:
-        for player in players:
+        for player in glob_file.players:
             player.update(table_img)
+    glob_file.players[0].set_availability(availability = isHeroAvailable())
     printPlayersInfo()
 
-    return cards, players, fast_fold, fold, check, call, bet, raise_to, dealer_button, bet_sizer
 
+    searchAllBets(table_img)
+    printBetsInfo()
 
+    return
 
+def searchAllOpenCards(table_img):
 
-
-def searchAllOpenCards(table, table_img):
-    global all_cards_found
-    all_cards_found = False
-    global cards
-    cards=[]
+    glob_file.all_cards_found = False
+    glob_file.cards=[]
 
     card_colors = ['heart','diamond','club','spade']
     known_positions=[]
     for i, card_color in enumerate(card_colors):
-        #pyautogui.locate('../../data/images/cards/card_'+card_color+'.png', table_img, confidence=0.9)
-        try:
-            for j, box in enumerate(pyautogui.locateAll('../../data/images/cards/card_'+card_color+'.png', table_img, confidence=0.9)):
+        if(True):
+            for j, box in enumerate(pyautogui.locateAll('../../data/images/cards/card_'+card_color+'.png', table_img, confidence=0.95)):
                 known=False
                 for known_position in known_positions:
                     #avoid spotting twice the same
@@ -121,50 +102,43 @@ def searchAllOpenCards(table, table_img):
 
 
                 if(not(known)):
-                    #print(box)
                     known_positions.append({'left':box.left,'top':box.top})
-                    new_card =Card(id_='card_'+card_color+'_'+str(j), color = card_color[0], box= box, table=table, table_img=table_img)
-                    cards.append(new_card)
-        except:
+                    new_card =Card(id_='card_'+card_color+'_'+str(j), color = card_color[0], box= box, table_img = table_img)
+                    glob_file.cards.append(new_card)
+        else:
             pass
 
-    cards.sort(key=lambda x: x.box.left)
-    cards.sort(key=lambda x: x.isHeroCard, reverse=True)
+    glob_file.cards.sort(key=lambda x: x.box.left)
+    glob_file.cards.sort(key=lambda x: x.isHeroCard, reverse=True)
 
 
     #print("There are : "+str(len(cards))+ " cards")
-    if(len(cards)>=2):
-        if(cards[0].box.left>cards[1].box.left):
-            card_0, card_1 = cards[1], cards[0]
-            cards[1], cards[0] = card_1, card_0
-    if(len(cards)==7):
+    if(len(glob_file.cards)>=2):
+        if(glob_file.cards[0].box.left>glob_file.cards[1].box.left):
+            card_0, card_1 = glob_file.cards[1], glob_file.cards[0]
+            glob_file.cards[1], glob_file.cards[0] = card_1, card_0
+    if(len(glob_file.cards)==7):
         #All cards were found, creating classes for speedup
-        all_cards_found = True
-        for i,card in enumerate(cards):
+        glob_file.all_cards_found = True
+        for i,card in enumerate(glob_file.cards):
             card.setId(i)
         print("# All cards found and classes created #")
-    if(len(cards)>7):
+    if(len(glob_file.cards)>7):
         print("[Warning] Too many cards spotted!")
 
-    return cards
-
-
-
+    return
 
 
 def searchAllPlayers(table_img):
-    global all_players_found
-    all_players_found=False
-    global players
-    players = []
-    player_holder_path="../../data/images/player_holder/"
+    glob_file.all_players_found=False
+    glob_file.players = []
     player_boxes=[]
 
     known_positions=[]
 
     #players_found=0
-    for file in os.listdir(player_holder_path):
-        for j, box in enumerate(pyautogui.locateAll(player_holder_path+file, table_img, confidence=0.95)):
+    for file in os.listdir(constants.PLAYER_IMAGE_PATH):
+        for j, box in enumerate(pyautogui.locateAll(constants.PLAYER_IMAGE_PATH+file, table_img, confidence=constants.PLAYER_DET_CONFIDENCE)):
             #print(box)
             known=False
             for known_position in known_positions:
@@ -177,53 +151,131 @@ def searchAllPlayers(table_img):
                 player_boxes.append(box)
                 known_positions.append({'left':box.left,'top':box.top})
 
-    if(len(player_boxes)<6):
+    if(len(player_boxes)<constants.NB_PLAYERS):
         print('[Warning] Only '+str(len(player_boxes))+" players found")
 
-    elif len(player_boxes)==6:
+    elif len(player_boxes)==constants.NB_PLAYERS:
         player_boxes.sort(key=lambda box: box.left)
         player_boxes.sort(key=lambda box: box.top, reverse=True)
         player_2, player_3,player_5 = player_boxes[3], player_boxes[5], player_boxes[2]
         player_boxes[2], player_boxes[3], player_boxes[5] = player_2, player_3, player_5
         for i, box in enumerate(player_boxes):
-            players.append(Player(id_=i, box=box, table_img=table_img))
+            glob_file.players.append(Player(id_=i, image_file_path = constants.HOLE_CARDS_IMAGE,
+            detection_confidence= constants.HOLE_CARDS_DET_CONFIDENCE, player_box=box, table_img=table_img))
 
-        all_players_found = True
+        glob_file.all_players_found = True
         print("# All players found and classes created #")
 
     else:
         print("[Warning] Found too many players")
         pass
+    return
 
 
 
-    return players
+def searchAllBets(table_img):
+    glob_file.all_bet_containers_found=False
+    glob_file.bet_containers = []
+
+    numbers_list = []
+    table_img_portion = table_img #table_img.crop((self.box.left-100,self.box.top-100,self.box.left+self.box.width+100,self.box.top+self.box.height+100))
+    try:
+        #Attempt to locate bet
+        for i, file in enumerate(range(10)): #os.listdir(constants.NUMBERS_BET_PATH)
+            file = str(i)+'.png'
+            for j, box in enumerate(pyautogui.locateAll(constants.NUMBERS_BET_PATH+file, table_img_portion, confidence=constants.NUMBERS_BET_DET_CONFIDENCE)):
+                if(box!=None):
+                    numbers_list.append(Number(value=i, box=box))
+                else:
+                    pass
+    except:
+        pass
+    numbers_list.sort(key=lambda number: number.left)
+    numbers_list.sort(key=lambda number: number.top)
+    #print([number.value for number in numbers_list])
+
+    bet_container_id = 0
+    for i in range(len(numbers_list)):
+        if(i==0):
+            number = numbers_list[i]
+            glob_file.bet_containers.append(NumberContainer(id_=bet_container_id, type = 'BET'))
+            glob_file.bet_containers[bet_container_id].addNumber(number)
+        else:
+            previous_number =  numbers_list[i-1]
+            number = numbers_list[i]
+
+            if (previous_number.left)<=number.left and (previous_number.left+20)>=number.left and previous_number.top==number.top:
+                glob_file.bet_containers[bet_container_id].addNumber(number)
+            else:
+                bet_container_id+=1
+                glob_file.bet_containers.append(NumberContainer(id_=bet_container_id, type = 'BET'))
+                glob_file.bet_containers[bet_container_id].addNumber(number)
+
+    #print(glob_file.players[0].center_pos)
+    for bet_container in glob_file.bet_containers:
+        bet_container.computeValue()
+        #print(bet_container.value)
+        bet_container.attributeEntity(glob_file.players, glob_file.table.center_pos)
+        #glob_file.players[bet_container.corresponding_entity].setCorrespondingNumbers(type=bet_container.type, value=bet_container.value)
+
+    glob_file.bet_containers.sort(key=lambda x: -1 if x.corresponding_entity == 'POT' else x.corresponding_entity)
+
+    if(len(glob_file.bet_containers)==constants.NB_PLAYERS):
+        glob_file.all_bet_containers_found = True
+
+    return
 
 
 def printCardsInfo():
-    if(len(cards)>=2):
-        print("-> Hero has: "+cards[0].value+ cards[0].color+ ", "+cards[1].value+ cards[1].color+ "")
-    if(len(cards)>=5):
-        print("Flop is: "+cards[2].value+ cards[2].color+", "+cards[3].value+ cards[3].color+", "+cards[4].value+ cards[4].color+ "")
-    if(len(cards)>=6):
-        print("Turn is: "+cards[5].value+ cards[5].color+"")
-    if(len(cards)==7):
-        print("River is: "+cards[6].value+ cards[6].color+"")
-    return cards
+    #still not found all cards
+    if(len(glob_file.cards)<=6):
+        if(len(glob_file.cards)>=2):
+            print("-> Hero has: "+glob_file.cards[0].value+ glob_file.cards[0].color+ ", "+glob_file.cards[1].value+ glob_file.cards[1].color+ "")
+        if(len(glob_file.cards)>=5):
+            print("Flop is: "+glob_file.cards[2].value+ glob_file.cards[2].color+", "+glob_file.cards[3].value+ glob_file.cards[3].color+", "+glob_file.cards[4].value+ glob_file.cards[4].color+ "")
+        if(len(glob_file.cards)==6):
+            print("Turn is: "+glob_file.cards[5].value+ glob_file.cards[5].color+"")
+    ##all cards were found
+    elif(len(glob_file.cards)==7):
+        available_cards = [card for card in glob_file.cards if card.is_available]
+        if(len(available_cards)>=2):
+            print("-> Hero has: "+available_cards[0].value+ available_cards[0].color+ ", "+available_cards[1].value+ available_cards[1].color+ "")
+        if(len(available_cards)>=5):
+            print("Flop is: "+available_cards[2].value+ available_cards[2].color+", "+available_cards[3].value+ available_cards[3].color+", "+available_cards[4].value+ available_cards[4].color+ "")
+        if(len(available_cards)>=6):
+            print("Turn is: "+available_cards[5].value+ available_cards[5].color+"")
+        if(len(available_cards)==7):
+            print("River is: "+available_cards[6].value+ available_cards[6].color+"")
+    return
 
 def printPlayersInfo():
     players_playing = []
-    for player in players:
-        if player.is_playing:
+    for player in glob_file.players:
+        if player.is_available:
             players_playing.append(player.id)
     print("-> Currently active players are: "+ str(players_playing).strip('[]'))
+    return
+
+def printBetsInfo():
+    bets = []
+    for bet in glob_file.bet_containers:
+        if (bet.corresponding_entity=='POT'):
+            print("-> There is "+str(bet.value)+" in the central pot")
+        else:
+            print("Player "+str(bet.corresponding_entity)+' has contributed '+str(bet.value))
+
+def isHeroAvailable():
+    if(glob_file.cards[0].is_available and glob_file.cards[1].is_available):
+        #set Hero as available
+        hero_availability = True
+    else: hero_availability = False
+    return hero_availability
 
 def screenTable(library='xlib'):
-    num_displays=2
     if (library=='xlib'):
         from Xlib import display, X
         ##Get screenshot of the table##
-        width,height = int((1/2)*pyautogui.size().width/num_displays),int((3/4)*pyautogui.size().height)
+        width,height = int((1/2)*pyautogui.size().width/constants.NB_DISPLAYS),int((4/4)*pyautogui.size().height)
         dsp = display.Display()
         root = dsp.screen().root
         raw = root.get_image(0, 0, width, height, X.ZPixmap, 0xffffffff)
@@ -243,7 +295,7 @@ def screenTable(library='xlib'):
         del app
         strio.seek(0)
         table_img = Image.open(strio)
-        width,height = int((1/2)*pyautogui.size().width/num_displays),int((3/4)*pyautogui.size().height)
+        width,height = int((1/2)*pyautogui.size().width/constants.NB_DISPLAYS),int((3/4)*pyautogui.size().height)
         table_img = table_img.crop((0,0,width,height))
        # print(table_img)
         return table_img
