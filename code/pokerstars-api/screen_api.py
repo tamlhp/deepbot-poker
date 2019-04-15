@@ -51,7 +51,7 @@ def updateTableState():
 
     #new table scan
     print('\n### New screen Scan ###')
-    table_img = screenTable()
+    table_img = screenTable(library='xlib')
 
     unique_screen_items = [glob_file.fast_fold, glob_file.fold, glob_file.check, glob_file.call,
         glob_file.bet, glob_file.raise_to, glob_file.bet_sizer, glob_file.dealer_button]
