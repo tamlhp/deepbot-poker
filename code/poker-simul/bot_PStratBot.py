@@ -15,6 +15,7 @@ import math
 import itertools
 
 my_verbose = False
+my_verbose_upper = True
 
 class PStratBot(BasePokerPlayer):
     
@@ -31,9 +32,38 @@ class PStratBot(BasePokerPlayer):
     #  we define the logic to make an action through this method. (so this method would be the core of your AI)
     def declare_action(self, valid_actions, hole_card, round_state):
         # valid_actions format => [raise_action_info, call_action_info, fold_action_info]
-        if True: 
-            print('Hole cards: ' + str(list(map(lambda x: x.__str__(), self.hole_card)))
-            + ', community cards: ' +str(list(map(lambda x: x.__str__(), gen_cards(round_state['community_card'])))))
+        
+        """
+        #DEBUGGING
+        valid_actions = [{'action': 'fold', 'amount': 0}, {'action': 'call', 'amount': 100}, {'action': 'raise', 'amount': {'min': 150, 'max': 10000}}]
+        hole_card = ['SA','SK']
+        round_state = {'action_histories': 
+        {'turn': [{'paid': 0, 'uuid': 'dsitwxjfzukumvtbxangpv', 'action': 'CALL', 'amount': 0}, 
+                  {'paid': 0, 'uuid': 'kydxboxhgkqcosfunbpkxs', 'action': 'CALL', 'amount': 0}], 
+        'preflop': [{'add_amount': 50, 'uuid': 'dsitwxjfzukumvtbxangpv', 'action': 'SMALLBLIND', 'amount': 50}, 
+                    {'add_amount': 50, 'uuid': 'kydxboxhgkqcosfunbpkxs', 'action': 'BIGBLIND', 'amount': 100}, 
+                    {'action': 'FOLD', 'uuid': 'xkrwhpjormlqgduzvsivsb'}, 
+                    {'paid': 100, 'uuid': 'wywinfwqxcrtocydvsszbc', 'action': 'CALL', 'amount': 100}, 
+                    {'paid': 50, 'uuid': 'dsitwxjfzukumvtbxangpv', 'action': 'CALL', 'amount': 100}, 
+                    {'paid': 0, 'uuid': 'kydxboxhgkqcosfunbpkxs', 'action': 'CALL', 'amount': 100}], 
+        'flop': [{'paid': 0, 'uuid': 'dsitwxjfzukumvtbxangpv', 'action': 'CALL', 'amount': 0}, 
+                 {'paid': 0, 'uuid': 'kydxboxhgkqcosfunbpkxs', 'action': 'CALL', 'amount': 0}, 
+                 {'paid': 0, 'uuid': 'wywinfwqxcrtocydvsszbc', 'action': 'CALL', 'amount': 0}]}, 
+        'community_card': ['HA', 'H4', 'H2', 'S7'], 'pot': {'main': {'amount': 300}, 'side': []}, 
+        'street': 'turn', 'dealer_btn': 0, 'next_player': 0, 'small_blind_amount': 50, 
+        'seats': [{'state': 'participating', 'name': 'p1', 'uuid': 'wywinfwqxcrtocydvsszbc', 'stack': 9900}, 
+                  {'state': 'participating', 'name': 'p2', 'uuid': 'dsitwxjfzukumvtbxangpv', 'stack': 9900}, 
+                  {'state': 'participating', 'name': 'p3', 'uuid': 'kydxboxhgkqcosfunbpkxs', 'stack': 9900}, 
+                  {'state': 'folded', 'name': 'p4', 'uuid': 'xkrwhpjormlqgduzvsivsb', 'stack': 10000}], 
+        'small_blind_pos': 1, 'big_blind_pos': 2, 'round_count': 1}
+        """
+        
+        
+        self.hole_card = gen_cards(hole_card)
+        self.pos_group = self.define_position(round_state)
+        
+        if my_verbose_upper: 
+            self.print_cards(round_state)
         strat = self.define_strat(round_state)
         self.street_was_raised = self.was_raised(round_state)
         
@@ -42,23 +72,18 @@ class PStratBot(BasePokerPlayer):
         return action, amount   # action returned here is sent to the poker engine
 
     def receive_game_start_message(self, game_info):
-        #print(game_info)
         self.num_players = game_info['player_num']
         self.big_blind_amount = game_info['rule']['small_blind_amount']*2
         pass
 
     def receive_round_start_message(self, round_count, hole_card, seats):
-        self.hole_card = gen_cards(hole_card)
-        #self.hole_card_num = sorted([hole_card[0][1],hole_card[1][1]])
-        #self.hole_card_color = sorted([hole_card[0][0],hole_card[1][0]])
-        self.pos_group = ''
-       # if(True):
-        #    print('Hole cards: ' +str(list(map(lambda x: x.__str__(), self.hole_card))))
+        #self.hole_card = gen_cards(hole_card)
+        #self.pos_group = ''
         pass
 
     def receive_street_start_message(self, street, round_state):
-        if(street=='preflop'):
-            self.pos_group = self.define_position(round_state)
+        #if(street=='preflop'):
+        #    self.pos_group = self.define_position(round_state)
         return
 
     def receive_game_update_message(self, action, round_state):
@@ -82,60 +107,6 @@ class PStratBot(BasePokerPlayer):
         else:
             pos_group = 'early'
         return pos_group
-    
-    def define_action(self, strat, round_state, valid_actions):
-        action = None
-        amount = None   
-        
-        if strat == 'deep_preflop_raise_raise':
-            if not(self.street_was_raised): 
-                call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
-                amount = (3+self.number_called(round_state))*self.big_blind_amount - call_amount
-                action, amount = self.raise_in_limits(amount, valid_actions)
-            else:
-                amount = 3*[action_desc['amount'] for action_desc in round_state['action_histories'][round_state['street']]][-1]
-                action, amount = self.raise_in_limits(amount, valid_actions)
-                
-        elif strat == 'deep_preflop_raise_fold':
-            if not(self.street_was_raised):
-                action = 'raise'
-                call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
-                amount = (3+self.number_called(round_state))*self.big_blind_amount - call_amount
-            else:
-                action, amount = self.check_fold(valid_actions)
-        
-        elif strat == 'deep_postflop_raise_raise':
-            if not(self.street_was_raised):
-                call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
-                amount = (2/3)*round_state['pot']['main']['amount']
-                action, amount = self.raise_in_limits(amount, valid_actions)
-            else:
-                nb_raise_before = sum([action_desc['action']=='RAISE' for action_desc in round_state['action_histories'][round_state['street']]])
-                if nb_raise_before==1:
-                    last_raise = [action_desc['action']=='RAISE' for action_desc in round_state['action_histories'][round_state['street']]][-1]['amount']
-                    amount = 3*last_raise + round_state['pot']['main']['amount']
-                    action, amount = self.raise_in_limits(amount, valid_actions)
-                else:
-                    action, amount = self.raise_in_limits(math.inf, valid_actions)
-            
-        elif strat == 'short_shove':
-            action = 'raise'
-            action, amount = self.raise_in_limits(math.inf, valid_actions)
-            
-        
-        elif strat == 'fold':
-            action, amount = self.check_fold(valid_actions)
-        
-        if action == None or amount == None:
-            action = 'fold'
-            amount = 0
-            print('[Error] No move defined, choosing to fold')
-            
-        if(True):
-            print(str(action)+'ing '+str(amount))
-            
-        return action, amount
-
     
     def define_strat(self, round_state):
         hero_BBs = round_state['seats'][round_state['next_player']]['stack']/self.big_blind_amount
@@ -168,14 +139,24 @@ class PStratBot(BasePokerPlayer):
             else: #postflop
                 ### Go through possible cases ###
                 hand_score = HandEvaluator.eval_hand(self.hole_card,gen_cards(round_state['community_card']))
+                print('Hand: ' + "{0:b}".format(hand_score))
                 #hand is two-pair or better
                 two_pair_score = (1<<17)
                 pair_score = (1<<16)
-                if(hand_score> two_pair_score):
+                #hand is higher than double pair
+                if(hand_score > two_pair_score):
                     strat = 'deep_postflop_raise_raise'
-                #player has a top-pair    
+                if(hand_score & two_pair_score
+                #hole cards used in double pair
+                and all([card.rank in [self.combi_card(hand_score, i) for i in range(2)] for card in self.hole_card])
+                #hole cards are not pocket
+                and self.hole_card[0].rank != self.hole_card[1].rank):
+                    strat = 'deep_postflop_raise_raise'
+                #player has a pair    
                 elif(hand_score &  pair_score
-                    ## TODO#
+                #a hole card is used in pair
+                and any([card.rank == self.combi_card(hand_score, i) for card in self.hole_card for i in range(2)])
+                #pair is top
                 and all([self.combi_card(hand_score)>=card.rank for card in gen_cards(round_state['community_card'])])):
                     strat = 'deep_postflop_raise_raise'
                 #strong draws on flop or turn
@@ -287,9 +268,63 @@ class PStratBot(BasePokerPlayer):
                             strat =  'short_shove'
                 
         #print(card for card in self.hole_card)
-        if(True):
+        if my_verbose_upper:
             print('Following strat: ' + strat)
         return strat
+    
+    def define_action(self, strat, round_state, valid_actions):
+        action = None
+        amount = None   
+        
+        if strat == 'deep_preflop_raise_raise':
+            if not(self.street_was_raised): 
+                call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
+                amount = int((3+self.number_called(round_state))*self.big_blind_amount - call_amount)
+                action, amount = self.raise_in_limits(amount, valid_actions)
+            else:
+                amount = int(3*[action_desc['amount'] for action_desc in round_state['action_histories'][round_state['street']] if action_desc['action']=='RAISE'][-1])
+                action, amount = self.raise_in_limits(amount, valid_actions)
+                
+        elif strat == 'deep_preflop_raise_fold':
+            if not(self.street_was_raised):
+                call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
+                amount = int((3+self.number_called(round_state))*self.big_blind_amount - call_amount)
+                action, amount = self.raise_in_limits(amount, valid_actions)
+            else:
+                action, amount = self.check_fold(valid_actions)
+        
+        elif strat == 'deep_postflop_raise_raise':
+            if not(self.street_was_raised):
+                call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
+                amount = int((2/3)*round_state['pot']['main']['amount'])
+                action, amount = self.raise_in_limits(amount, valid_actions)
+            else:
+                nb_raise_before = sum([action_desc['action']=='RAISE' for action_desc in round_state['action_histories'][round_state['street']]])
+                if nb_raise_before==1:
+                    last_raise = [action_desc['action']=='RAISE' for action_desc in round_state['action_histories'][round_state['street']]][-1]['amount']
+                    amount = int(3*last_raise + round_state['pot']['main']['amount'])
+                    action, amount = self.raise_in_limits(amount, valid_actions)
+                else:
+                    action, amount = self.raise_in_limits(math.inf, valid_actions)
+            
+        elif strat == 'short_shove':
+            action = 'raise'
+            action, amount = self.raise_in_limits(math.inf, valid_actions)
+            
+        
+        elif strat == 'fold':
+            action, amount = self.check_fold(valid_actions)
+        
+        if action == None or amount == None:
+            action = 'fold'
+            amount = 0
+            print('[Error] No move defined, choosing to fold')
+            
+        if my_verbose_upper:
+            print(str(action)+'ing '+str(amount))
+            
+        return action, amount
+
     
     def hand_in_range(self, hands_max, hands_min, suited = False, pocket=False):
 
@@ -337,6 +372,7 @@ class PStratBot(BasePokerPlayer):
             max_raise = [item for item in valid_actions if item['action'] == 'raise'][0]['amount']['max']
             min_raise = [item for item in valid_actions if item['action'] == 'raise'][0]['amount']['min']
             if amount>max_raise:
+                print('Going all in')
                 amount_in_limits = max_raise
             elif amount<min_raise:
                 amount_in_limits = min_raise
@@ -361,9 +397,9 @@ class PStratBot(BasePokerPlayer):
     
     def combi_card(self, hand_score, id_=0):
         if(id_==0):    
-            return int(sum([hand_score & (1<<n) for n in range(3,7)])/(2**4))
+            return int(sum([hand_score & (1<<n) for n in range(12,16)])/(2**12))
         elif(id_==1):
-            return int(sum([hand_score & (1<<n) for n in range(0,4)]))
+            return int(sum([hand_score & (1<<n) for n in range(8,12)])/(2**12))
         else:
             ##Error
             pass
@@ -387,10 +423,9 @@ class PStratBot(BasePokerPlayer):
         and ((self.hole_card[0].suit == self.hole_card[1].suit and self.hole_card[0].suit == flush_color)
         #hole card in flush draw is A or K
         or any([self.hole_card[j].rank in ['A','K'] for j in range(2)]))):
-            if(True): 
-                print('Hand is strong flush draw')
-                print(self.hole_card)
-                print(round_state['community_card'])
+            if my_verbose_upper: 
+                print('Strong flush draw')
+                self.print_cards(round_state)
             return True
         else:
             return False
@@ -415,13 +450,15 @@ class PStratBot(BasePokerPlayer):
         if sum([x==2 for x in nb_neighbors.values()])>=2:
             cards_with_two_neighbors = [d for d, s in zip(nb_neighbors.keys(), [x==2 for x in nb_neighbors.values()]) if s]
             if(abs(cards_with_two_neighbors[0]-cards_with_two_neighbors[1])==1):
-                if(True): 
-                    print('Hand is strong straight draw')
-                    print(self.hole_card)
-                    print(round_state['community_card'])
+                if(my_verbose_upper):
+                    print('Strong straight draw')
+                    self.print_cards(round_state)
                 return True
         return False
-            
+        
+    def print_cards(self, round_state):
+        print('Hole cards: ' + str(list(map(lambda x: x.__str__(), self.hole_card)))
+            + ', community cards: ' +str(list(map(lambda x: x.__str__(), gen_cards(round_state['community_card'])))))
         
 def setup_ai():
     return PStratBot()

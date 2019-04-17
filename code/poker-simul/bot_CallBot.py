@@ -16,6 +16,7 @@ class CallBot(BasePokerPlayer):  # Do not forget to make parent class as "BasePo
         # valid_actions format => [raise_action_info, call_action_info, fold_action_info]
         call_action_info = valid_actions[1]
         action, amount = call_action_info["action"], call_action_info["amount"]
+        #print(round_state)
         return action, amount   # action returned here is sent to the poker engine
 
     def receive_game_start_message(self, game_info):

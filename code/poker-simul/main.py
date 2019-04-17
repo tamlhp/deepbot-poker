@@ -26,5 +26,7 @@ config = setup_config(max_round=1000, initial_stack=10000, small_blind_amount=50
 config.register_player(name="p1", algorithm=CallBot())
 config.register_player(name="p2", algorithm=CallBot())
 config.register_player(name="p3", algorithm=CallBot())
-config.register_player(name="p4", algorithm=PStratBot())
+config.register_player(name="p4", algorithm=HandEvaluatingBot())
 game_result = start_poker(config, verbose=0)
+
+print(game_result)

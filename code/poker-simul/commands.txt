@@ -1,6 +1,6 @@
 
 ## start gui
-pypokergui serve /Users/ishikota/poker/poker_conf.yaml --port 8000 --speed moderate
+pypokergui serve /home/cyril/Documents/deepbot/deepbot-git/code/poker-simul/poker_conf.yaml --port 8000 --speed moderate
 
 
 #poker engine library

@@ -11,7 +11,7 @@ from pypokerengine.players import BasePokerPlayer
 from pypokerengine.utils.card_utils import _pick_unused_card, _fill_community_card, gen_cards
 from tools import flatten_list
 
-my_verbose = False
+my_verbose = True
 
 # Estimate the ratio of winning games given the current state of the game
 def estimate_win_rate(nb_simulation, nb_player, hole_card, community_card=None):
@@ -35,8 +35,8 @@ def montecarlo_simulation(nb_player, hole_card, community_card):
     opponents_score = [HandEvaluator.eval_hand(hole, community_card) for hole in opponents_hole]
     my_score = HandEvaluator.eval_hand(hole_card, community_card)
     if (my_verbose):
-        print("Opponent's scores: "+ str(opponents_score))
-        print("My score: "+str(my_score))
+        #print("Opponent's scores: "+ str(opponents_score))
+        #print("My score: "+str(my_score))
         pass
     return 1 if my_score >= max(opponents_score) else 0
 
@@ -85,7 +85,6 @@ class HandEvaluatingBot(BasePokerPlayer):
         self.losses = 0
 
     def declare_action(self, valid_actions, hole_card, round_state):
-        print(round_state)
         # Estimate the win rate
         win_rate = estimate_win_rate(100, self.num_players, hole_card, round_state['community_card'])
         if(my_verbose):

@@ -1,11 +1,17 @@
 ai_players:
-- name: callbot
-  path: /home/cyril/Documents/deepbot/deepbot-git/code/poker-simul/bot_CallBot.py
-- name: montecarlorblogger
-  path: /home/cyril/Documents/deepbot/deepbot-git/code/poker-simul/bot_DatabloggerBot.py
+- name: RuleBot1
+  path: /home/cyril/Documents/deepbot/deepbot-git/code/poker-simul/bot_PStratBot.py
+- name: RuleBot2
+  path: /home/cyril/Documents/deepbot/deepbot-git/code/poker-simul/bot_PStratBot.py
+- name: RuleBot3
+  path: /home/cyril/Documents/deepbot/deepbot-git/code/poker-simul/bot_PStratBot.py
+- name: RuleBot4
+  path: /home/cyril/Documents/deepbot/deepbot-git/code/poker-simul/bot_PStratBot.py
+- name: RuleBot5
+  path: /home/cyril/Documents/deepbot/deepbot-git/code/poker-simul/bot_PStratBot.py
 ante: 0
 blind_structure: null
-initial_stack: 100
-max_round: 10
-small_blind: 10
+initial_stack: 1500
+max_round: 20
+small_blind: 25
 
