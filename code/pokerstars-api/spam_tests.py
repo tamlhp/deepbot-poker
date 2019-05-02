@@ -6,12 +6,75 @@ Created on Mon Feb 25 12:17:48 2019
 @author: cyril
 """
 
-
+import glob_file
+import pyautogui
+import sys
+import constants
+from PIL import Image
 
 #!/usr/bin/env python
 # encoding: utf-8
 
 
+
+
+def initializeTable():
+    table_found = False
+    while(not(table_found)):
+        print('Looking for table')
+        table_img = screenTable(library='xlib')
+        glob_file.table.update(table_img)
+        if(not(glob_file.table.never_spotted)):
+            table_found=True
+            glob_file.dealer_button.set_relevant_box(glob_file.table.box)
+            glob_file.dealer_button.set_table_center(glob_file.table.center_pos)
+            print('Found and initialized table at position: '+str(glob_file.table.center_pos))
+            glob_file.bet_value_box.update(table_img)
+            print(glob_file.bet_value_box.box)
+        else:
+            print('Table not found')
+            
+
+
+
+def screenTable(library='xlib'):
+    if (library=='xlib'):
+        from Xlib import display, X
+        ##Get screenshot of the table##
+        width,height = int((1/2)*pyautogui.size().width/constants.NB_DISPLAYS),int((4/4)*pyautogui.size().height)
+        dsp = display.Display()
+        root = dsp.screen().root
+        raw = root.get_image(0, 0, width, height, X.ZPixmap, 0xffffffff)
+        table_img = Image.frombytes("RGB", (width, height), raw.data, "raw", "BGRX").convert('RGB')
+        return table_img
+    elif (library=='pyqt'):
+        from PyQt4.QtGui import QPixmap, QApplication
+        from PyQt4.Qt import QBuffer, QIODevice
+        import io
+        app = QApplication(sys.argv)
+        buffer = QBuffer()
+        buffer.open(QIODevice.ReadWrite)
+        QPixmap.grabWindow(QApplication.desktop().winId()).save(buffer, 'png')
+        strio = io.BytesIO()
+        strio.write(buffer.data())
+        buffer.close()
+        del app
+        strio.seek(0)
+        table_img = Image.open(strio)
+        width,height = int((1/2)*pyautogui.size().width/constants.NB_DISPLAYS),int((3/4)*pyautogui.size().height)
+        table_img = table_img.crop((0,0,width,height))
+       # print(table_img)
+        return table_img
+
+    else:
+        print("The library: "+library+" can't be used here")
+
+
+constants.init()
+glob_file.init()
+initializeTable()
+
+"""
 
 import pytesseract
 from PIL import Image, ImageEnhance, ImageFilter
@@ -20,7 +83,7 @@ from PIL import Image, ImageEnhance, ImageFilter
 text = pytesseract.image_to_string(Image.open("../data/table-flop.png"), lang='eng',
                         config='--psm 10 --oem 3 -c tessedit_char_whitelist=0123456789')
 
-
+"""
 
 """
 ###CV2 PYTESSERACT OCR

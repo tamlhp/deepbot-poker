@@ -19,6 +19,7 @@ from pypokerengine.players import BasePokerPlayer
 from pypokerengine.utils.card_utils import _pick_unused_card, _fill_community_card, gen_cards
 
 import itertools
+import glob_file
 """
 print(estimate_win_rate(1000,2,['HA', 'SK']))
 print(estimate_win_rate(1000,2,['HA', 'SK']))
@@ -34,18 +35,11 @@ print(estimate_flop_odd(1000,2,['HA', 'SK']))
 
 
 
-
-
-
+"""    
 # Estimate the ratio of winning games given the current state of the game
-#def estimate_win_rate(nb_simulation, nb_player, hole_card, community_card=None):
-
-    
 for i in range(100):
     print(estimate_win_rate(1000,3,['SQ','HJ'],['ST','D2','D9']))
-
-
-
+"""
 
 
 """

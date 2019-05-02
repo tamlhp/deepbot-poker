@@ -35,13 +35,31 @@ def screenTablePortion(left=0,top=0,width=0,height=0):
 def itemExists(scan_img, image_path, grayscale=False, detection_confidence = 0.8):
        # box = pyautogui.locate('../data/images/'+image_path, scan_img, grayscale=grayscale, confidence=detection_confidence)
       #  print(box)
-        try:
-            #Attempt to locate button
-            box = pyautogui.locate('../data/images/'+image_path, scan_img, grayscale=grayscale, confidence=detection_confidence)
-            if(box!=None):
-                return True
-            else:
-                return False
-        except:
-            #print('ScreenItem : "'+ self.id +'" is NOT available')
+    try:
+        #Attempt to locate button
+        box = pyautogui.locate('../data/images/'+image_path, scan_img, grayscale=grayscale, confidence=detection_confidence)
+        if(box!=None):
+            return True
+        else:
             return False
+    except:
+        #print('ScreenItem : "'+ self.id +'" is NOT available')
+        return False
+        
+def computeBoxAngle(box, table_center):
+    center_pos= [box.left+box.width/2,box.top+box.height/2]
+
+    vect_box = [center_pos[0]-table_center[0],center_pos[1]-table_center[1]]
+    deg_box = angle_between([1,0],vect_box) + 60
+    if(deg_box<=0):
+        deg_box+=360
+    #print(box)
+    #print(deg_box)
+    return deg_box
+    
+    
+    
+    
+    
+    
+    

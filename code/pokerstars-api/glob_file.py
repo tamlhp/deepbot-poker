@@ -15,6 +15,22 @@ import constants
 
 
 def init():
+    global do_moves
+    do_moves = False
+    global do_clicks
+    do_clicks = False
+    global hole_card
+    hole_card = []
+    global valid_actions
+    valid_actions = []
+    global round_state
+    round_state = {}
+    global round_count
+    round_count = 0
+    global street_price
+    street_price = 0
+    global previous_street
+    previous_street = None
 
     # Creating table
     global table
@@ -34,6 +50,8 @@ def init():
     bet = Button(id_='Bet', image_file=constants.MENU_IMAGE_PATH+'menu_bet.png', detection_confidence=0.65, contains_value = True)
     global bet_sizer
     bet_sizer = Button(id_='Bet_sizer', image_file=constants.MENU_IMAGE_PATH+'bet_sizer.png', detection_confidence = 0.9)
+    global bet_value_box
+    bet_value_box = Button(id_='Bet_value_box', image_file=constants.MENU_IMAGE_PATH+'bet_value_box.png', detection_confidence = 0.95)
 
     global dealer_button
     dealer_button = DealerButton(id_='Dealer_button', image_file='../../data/images/dealer_button.png', detection_confidence = 0.95)
@@ -64,6 +82,16 @@ def init():
     all_bet_containers_found = False
     global bet_containers
     bet_containers = []
+    global main_pot
+    main_pot = 0
+    global new_street
+    new_street = True
+    global previous_bet_value
+    previous_bet_value = 0
+    global previous_players
+    previous_players = []
+    global next_players
+    next_players = []
 
 
     return

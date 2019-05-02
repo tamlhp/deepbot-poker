@@ -91,6 +91,8 @@ class Card():
                         print('[Warning] Two numbers detected!')
             except:
                 pass
+        if value == '10':
+            value = 'T'
         if (value==None):
             print('[Warning] No number detected!')
         return value

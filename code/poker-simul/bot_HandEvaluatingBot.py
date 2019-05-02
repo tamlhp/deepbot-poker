@@ -11,7 +11,7 @@ from pypokerengine.players import BasePokerPlayer
 from pypokerengine.utils.card_utils import _pick_unused_card, _fill_community_card, gen_cards
 from tools import flatten_list
 
-my_verbose = True
+my_verbose = False
 
 # Estimate the ratio of winning games given the current state of the game
 def estimate_win_rate(nb_simulation, nb_player, hole_card, community_card=None):
@@ -101,7 +101,7 @@ class HandEvaluatingBot(BasePokerPlayer):
 
         amount = None
 
-        # If the win rate is large enough, then raise
+        # If the win rate is large enough, then raise / call
         if win_rate > 1/self.num_players:
             raise_amount_options = [item for item in valid_actions if item['action'] == 'raise'][0]['amount']
             if win_rate > 1.8/self.num_players:
@@ -115,11 +115,17 @@ class HandEvaluatingBot(BasePokerPlayer):
             else:
                 # If there is a chance to win, then call
                 action = 'call'
+                amount = call_amount
         else:
             action = 'call' if can_call and call_amount == 0 else 'fold'
 
-        # Set the amount
+        if amount == -1:
+            #want to raise but can only call
+            action = 'call'
+            amount = call_amount
+
         if amount is None:
+            # Set the amount for calling or folding
             items = [item for item in valid_actions if item['action'] == action]
             amount = items[0]['amount']
 

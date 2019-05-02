@@ -28,7 +28,8 @@ class Button(ScreenItem):
     def childUpdateState(self, table_img):
         if(self.never_spotted and self.is_available):
             self.compCenterPosition()
-            self.relevant_box = Box(int(self.box.left-constants.RESEARCH_MARGIN*self.box.width),int(self.box.top-constants.RESEARCH_MARGIN*self.box.height),(1+2*constants.RESEARCH_MARGIN)*self.box.width,(1+2*constants.RESEARCH_MARGIN)*self.box.height)
+            if self.id=='Call': self.relevant_box = Box(int(self.box.left-constants.RESEARCH_MARGIN*self.box.width),int(self.box.top-constants.RESEARCH_MARGIN*self.box.height),(2+2*constants.RESEARCH_MARGIN)*self.box.width,(1+2*constants.RESEARCH_MARGIN)*self.box.height)
+            else: self.relevant_box = Box(int(self.box.left-constants.RESEARCH_MARGIN*self.box.width),int(self.box.top-constants.RESEARCH_MARGIN*self.box.height),(1+2*constants.RESEARCH_MARGIN)*self.box.width,(1+2*constants.RESEARCH_MARGIN)*self.box.height)
             print('[Button] : "'+ str(self.id) +'" spotted and available')
         if(self.contains_value):
             self.updateValue(table_img)

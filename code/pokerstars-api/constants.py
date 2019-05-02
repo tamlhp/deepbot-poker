@@ -12,6 +12,11 @@ def init():
 
     global NB_PLAYERS
     NB_PLAYERS = 6
+    
+    global CARD_DET_CONFIDENCE
+    CARD_DET_CONFIDENCE = 0.9
+    global CARD_PATH
+    CARD_PATH = '../../data/images/cards/card_'
 
     global PLAYER_DET_CONFIDENCE
     PLAYER_DET_CONFIDENCE = 0.92
@@ -53,5 +58,28 @@ def init():
 
     global RESEARCH_MARGIN
     RESEARCH_MARGIN = 1/4
+    
+    global HERO_POSITION
+    HERO_POSITION = 0
+
+    global MAX_SBS_FOR_CLICKRAISE
+    MAX_SBS_FOR_CLICKRAISE = 6
+    
+    global INV_RANK_MAP
+    INV_RANK_MAP = {
+          '2' : 2,
+          '3' : 3,
+          '4' : 4,
+          '5' : 5,
+          '6' : 6,
+          '7' : 7,
+          '8' : 8,
+          '9' : 9,
+          'T' : 10,
+          'J' : 11,
+          'Q' : 12,
+          'K' : 13,
+          'A' : 14
+      }
 
     return

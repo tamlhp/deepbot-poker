@@ -15,9 +15,10 @@ from Button import Button
 from Table import Table
 from DealerButton import DealerButton
 from Card import Card
+from Box import Box
 import numpy as np
 import sys
-from extra_functions import itemExists
+from extra_functions import itemExists, computeBoxAngle
 import os
 from functools import reduce
 
@@ -54,7 +55,7 @@ def updateTableState():
     table_img = screenTable(library='xlib')
 
     unique_screen_items = [glob_file.fast_fold, glob_file.fold, glob_file.check, glob_file.call,
-        glob_file.bet, glob_file.raise_to, glob_file.bet_sizer, glob_file.dealer_button]
+        glob_file.bet, glob_file.raise_to, glob_file.bet_sizer, glob_file.bet_value_box, glob_file.dealer_button]
 
     #Search or update all buttons
     for screen_item in unique_screen_items:
@@ -92,7 +93,7 @@ def searchAllOpenCards(table_img):
     known_positions=[]
     for i, card_color in enumerate(card_colors):
         if(True):
-            for j, box in enumerate(pyautogui.locateAll('../../data/images/cards/card_'+card_color+'.png', table_img, confidence=0.95)):
+            for j, box in enumerate(pyautogui.locateAll(constants.CARD_PATH+card_color+'.png', table_img, confidence=constants.CARD_DET_CONFIDENCE)):
                 known=False
                 for known_position in known_positions:
                     #avoid spotting twice the same
@@ -151,20 +152,24 @@ def searchAllPlayers(table_img):
                 player_boxes.append(box)
                 known_positions.append({'left':box.left,'top':box.top})
 
-    if(len(player_boxes)<constants.NB_PLAYERS):
-        print('[Warning] Only '+str(len(player_boxes))+" players found")
-
-    elif len(player_boxes)==constants.NB_PLAYERS:
-        player_boxes.sort(key=lambda box: box.left)
-        player_boxes.sort(key=lambda box: box.top, reverse=True)
-        player_2, player_3,player_5 = player_boxes[3], player_boxes[5], player_boxes[2]
-        player_boxes[2], player_boxes[3], player_boxes[5] = player_2, player_3, player_5
-        for i, box in enumerate(player_boxes):
-            glob_file.players.append(Player(id_=i, image_file_path = constants.HOLE_CARDS_IMAGE,
-            detection_confidence= constants.HOLE_CARDS_DET_CONFIDENCE, player_box=box, table_img=table_img))
-
+    if(len(player_boxes)==constants.NB_PLAYERS):
         glob_file.all_players_found = True
         print("# All players found and classes created #")
+
+    if(len(player_boxes)<=constants.NB_PLAYERS):
+        print(str(len(player_boxes))+" players found")
+        #for i in range(constants.NB_PLAYERS-len(player_boxes)):
+        #    player_boxes.append(Box(0,0,0,0))
+    #elif len(player_boxes)==constants.NB_PLAYERS:
+        
+        player_boxes.sort(key=lambda box: computeBoxAngle(box, glob_file.table.center_pos), reverse = True)
+       #player_boxes.sort(key=lambda box: box.top, reverse=True)
+       # player_2, player_3,player_5 = player_boxes[3], player_boxes[5], player_boxes[2]
+       # player_boxes[2], player_boxes[3], player_boxes[5] = player_2, player_3, player_5
+        for i, box in enumerate(player_boxes):
+            #computeBoxAngle(box, glob_file.table.center_pos)
+            glob_file.players.append(Player(id_=i, image_file_path = constants.HOLE_CARDS_IMAGE,
+            detection_confidence= constants.HOLE_CARDS_DET_CONFIDENCE, player_box=box, table_img=table_img))
 
     else:
         print("[Warning] Found too many players")
@@ -176,8 +181,9 @@ def searchAllPlayers(table_img):
 def searchAllBets(table_img):
     glob_file.all_bet_containers_found=False
     glob_file.bet_containers = []
-
     numbers_list = []
+    for player in glob_file.players: player.bet_value = 0
+    
     table_img_portion = table_img #table_img.crop((self.box.left-100,self.box.top-100,self.box.left+self.box.width+100,self.box.top+self.box.height+100))
     try:
         #Attempt to locate bet
@@ -216,7 +222,8 @@ def searchAllBets(table_img):
         bet_container.computeValue()
         #print(bet_container.value)
         bet_container.attributeEntity(glob_file.players, glob_file.table.center_pos)
-        #glob_file.players[bet_container.corresponding_entity].setCorrespondingNumbers(type=bet_container.type, value=bet_container.value)
+        if bet_container.corresponding_entity!='POT':
+            glob_file.players[bet_container.corresponding_entity].bet_value = bet_container.value
 
     glob_file.bet_containers.sort(key=lambda x: -1 if x.corresponding_entity == 'POT' else x.corresponding_entity)
 
@@ -257,7 +264,6 @@ def printPlayersInfo():
     return
 
 def printBetsInfo():
-    bets = []
     for bet in glob_file.bet_containers:
         if (bet.corresponding_entity=='POT'):
             print("-> There is "+str(bet.value)+" in the central pot")
@@ -265,10 +271,14 @@ def printBetsInfo():
             print("Player "+str(bet.corresponding_entity)+' has contributed '+str(bet.value))
 
 def isHeroAvailable():
-    if(glob_file.cards[0].is_available and glob_file.cards[1].is_available):
-        #set Hero as available
-        hero_availability = True
-    else: hero_availability = False
+    if len(glob_file.cards)<2:
+        hero_availability = False
+    else:
+        if(glob_file.cards[0].is_available and glob_file.cards[1].is_available):
+            #set Hero as available
+            hero_availability = True
+        else: hero_availability = False
+
     return hero_availability
 
 def screenTable(library='xlib'):
@@ -302,3 +312,26 @@ def screenTable(library='xlib'):
 
     else:
         print("The library: "+library+" can't be used here")
+
+
+def takeAction(action, amount):
+    if action=='fold':
+        glob_file.fold.moveTo(click = glob_file.do_clicks)
+    elif action=='call':
+        if amount==0:
+            glob_file.check.moveTo(click= glob_file.do_clicks)
+        else:
+            glob_file.call.moveTo(click= glob_file.do_clicks)
+    elif action == 'raise':
+        if glob_file.bet_value_box.is_available:
+            glob_file.bet_value_box.moveTo(click=glob_file.do_clicks)
+        #TODO, randomize interval
+        pyautogui.typewrite(str(amount), interval=0.15)
+        if glob_file.raise_to.is_available:
+            glob_file.raise_to.moveTo(click=glob_file.do_clicks)
+        elif glob_file.bet.is_available:
+            glob_file.bet.moveTo(click=glob_file.do_clicks)
+        else:
+            print('[Error] Trying to bet but both \'bet\' and \'raise_to\' are unavailable')
+            
+            

@@ -24,9 +24,10 @@ class Player(ScreenItem):
 
         self.box = self.player_box
         self.compCenterPosition()
-
+        self.is_folded = False
         self.bet_value = 0
         self.stack_value = 0
+        self.last_bet_seen=0
 
         self.stack_container = NumberContainer(id_ = self.id, type = 'STACK')
         #self.current_bet = 0
@@ -44,13 +45,13 @@ class Player(ScreenItem):
     def set_availability(self, availability):
         self.is_available = availability
         return
-
-    def setCorrespondingNumbers(self, type, value):
-        if(type=='STACK'):
+    """
+    def setCorrespondingNumbers(self, type_, value):
+        if(type_=='STACK'):
             self.stack_value = value
-        elif(type=='BET'):
+        elif(type_=='BET'):
             self.bet_value = value
-
+    """
 
     def updateStack(self, table_img):
         self.stack_container.numbers = []

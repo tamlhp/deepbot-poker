@@ -50,8 +50,8 @@ class NumberContainer(ScreenItem):
                 corresponding_entity_id = player.id
                 entity_is_player = True
         #checkin wether pot (center of table) is closer
-        if not(entity_is_player): norm_2 = ((self.numbers[0].left-table_center[0])**2 + (self.numbers[0].top-table_center[1])**2)
-        else: norm_2 = ((self.numbers[0].left-table_center[0])**2 + (self.numbers[0].top-table_center[1])**2)*2
+        if not(entity_is_player): norm_2 = ((self.numbers[0].left-table_center[0])**2 + (self.numbers[0].top-table_center[1])**2)*2
+        else: norm_2 = ((self.numbers[0].left-table_center[0])**2 + (self.numbers[0].top-table_center[1])**2)*2.5
 
         if norm_2<min_norm_2:
             min_norm_2 = norm_2

@@ -54,8 +54,6 @@ class ScreenItem:
 
         return spotted
 
-
-
     def updateState(self, spotted):
         if spotted:
             if self.never_spotted:

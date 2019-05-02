@@ -15,7 +15,7 @@ import math
 import itertools
 
 my_verbose = False
-my_verbose_upper = True
+my_verbose_upper = False
 
 class PStratBot(BasePokerPlayer):
     
@@ -28,11 +28,19 @@ class PStratBot(BasePokerPlayer):
         self.hole_card_num = ['','']
         self.pos_group = ''
         self.street_was_raised = None
+        self.num_players = 6
 
     #  we define the logic to make an action through this method. (so this method would be the core of your AI)
     def declare_action(self, valid_actions, hole_card, round_state):
         # valid_actions format => [raise_action_info, call_action_info, fold_action_info]
-        
+        #print(str(round_state) + '\n')
+        #hole_card = ['DK', 'HJ']
+        #round_state['community_card'] = ['HK', 'S8', 'DQ']
+        """        
+        print("hole_card:" + str(hole_card))
+        print("valid_actions:"+ str(valid_actions))
+        print("round_state:"+str(round_state))
+        """
         """
         #DEBUGGING
         valid_actions = [{'action': 'fold', 'amount': 0}, {'action': 'call', 'amount': 100}, {'action': 'raise', 'amount': {'min': 150, 'max': 10000}}]
@@ -61,19 +69,25 @@ class PStratBot(BasePokerPlayer):
         
         self.hole_card = gen_cards(hole_card)
         self.pos_group = self.define_position(round_state)
+        self.big_blind_amount = round_state['small_blind_amount']*2
+        
+        self.street_was_raised = self.was_raised(round_state)
         
         if my_verbose_upper: 
             self.print_cards(round_state)
-        strat = self.define_strat(round_state)
-        self.street_was_raised = self.was_raised(round_state)
+            print('Position group: ' +str(self.pos_group))
+            print('Main pot: '+ str(round_state['pot']['main']['amount']))
+            if self.street_was_raised:
+                print('Street was raised')
         
+        strat = self.define_strat(round_state)
+        print('Chosen strat: '+ str(strat))
         action, amount = self.define_action(strat, round_state, valid_actions)
         
         return action, amount   # action returned here is sent to the poker engine
 
     def receive_game_start_message(self, game_info):
         self.num_players = game_info['player_num']
-        self.big_blind_amount = game_info['rule']['small_blind_amount']*2
         pass
 
     def receive_round_start_message(self, round_count, hole_card, seats):
@@ -98,7 +112,7 @@ class PStratBot(BasePokerPlayer):
             rel_pos = (round_state['next_player']-round_state['small_blind_pos'])%self.num_players
         else:
             rel_pos = (player_id-round_state['small_blind_pos'])%self.num_players
-        if (rel_pos<=2):
+        if (rel_pos<=1):
             pos_group = 'blinds'
         elif (rel_pos>=self.num_players-2):
             pos_group = 'late'
@@ -112,7 +126,6 @@ class PStratBot(BasePokerPlayer):
         hero_BBs = round_state['seats'][round_state['next_player']]['stack']/self.big_blind_amount
         #if Hero has more than 12 BB
         if (hero_BBs>12):
-        
             if(round_state['street']=='preflop'): #preflop
                 ### Go through possible cases ###
                 #holding AA, KK, QQ or AK
@@ -139,18 +152,26 @@ class PStratBot(BasePokerPlayer):
             else: #postflop
                 ### Go through possible cases ###
                 hand_score = HandEvaluator.eval_hand(self.hole_card,gen_cards(round_state['community_card']))
-                print('Hand: ' + "{0:b}".format(hand_score))
-                #hand is two-pair or better
+                if (my_verbose):
+                    print('Hand: ' + "{0:b}".format(hand_score))
                 two_pair_score = (1<<17)
                 pair_score = (1<<16)
+                """
+                #todelete
                 #hand is higher than double pair
+                print('Hand: ' + "{0:b}".format(hand_score))
+                print(hand_score)
+                print('two-pair: ' + "{0:b}".format(two_pair_score))
+                print(two_pair_score)
+                """
+                #hand is two-pair or better
                 if(hand_score > two_pair_score):
                     strat = 'deep_postflop_raise_raise'
-                if(hand_score & two_pair_score
+                elif(hand_score & two_pair_score
                 #hole cards used in double pair
                 and all([card.rank in [self.combi_card(hand_score, i) for i in range(2)] for card in self.hole_card])
-                #hole cards are not pocket
-                and self.hole_card[0].rank != self.hole_card[1].rank):
+                #player holds card involved in top pair (or better)
+                and self.hole_card[0].rank >= self.combi_card(hand_score)):
                     strat = 'deep_postflop_raise_raise'
                 #player has a pair    
                 elif(hand_score &  pair_score
@@ -211,11 +232,12 @@ class PStratBot(BasePokerPlayer):
             elif(self.street_was_raised):
                 raiser_id = [action_desc['action']=='RAISE' for action_desc in round_state['action_histories'][round_state['street']]].index(True)
                 raiser_pos_group = self.define_position(round_state, raiser_id)
+                raiser_BBs = round_state['seats'][raiser_id]['stack']/self.big_blind_amount
                 if raiser_pos_group == 'early':
                     #offsuit cards
                     if (self.hand_in_range(['A'],['Q'])):
                         strat =  'short_shove'
-                    elif (hero_BBs<=12 and hero_BBs>6):
+                    elif (raiser_BBs<=12 and raiser_BBs>6):
                         #pockets
                         if (self.hand_in_range(['A'],['T'], pocket = True)):
                             strat = 'short_shove'
@@ -227,7 +249,7 @@ class PStratBot(BasePokerPlayer):
                     #pocket cards
                     if (self.hand_in_range(['A'],['7'], pocket = True)):
                             strat = 'short_shove'
-                    elif (hero_BBs<=12 and hero_BBs>6):
+                    elif (raiser_BBs<=12 and raiser_BBs>6):
                         #offsuit cards
                         if (self.hand_in_range(['A'],['Q'])):
                             strat =  'short_shove'
@@ -240,7 +262,7 @@ class PStratBot(BasePokerPlayer):
                     #pocket cards
                     if (self.hand_in_range(['A'],['5'], pocket = True)):
                             strat = 'short_shove'
-                    elif (hero_BBs<=12 and hero_BBs>6):
+                    elif (raiser_BBs<=12 and raiser_BBs>6):
                         #offsuit cards
                         if (self.hand_in_range(['A','K'],['T','Q'])):
                             strat =  'short_shove'
@@ -255,7 +277,7 @@ class PStratBot(BasePokerPlayer):
                     #pocket cards
                     if (self.hand_in_range(['A'],['2'], pocket = True)):
                             strat = 'short_shove'
-                    elif (hero_BBs<=12 and hero_BBs>6):
+                    elif (raiser_BBs<=12 and raiser_BBs>6):
                         #offsuit cards
                         if (self.hand_in_range(['A','K'],['8','Q'])):
                             strat =  'short_shove'
@@ -278,8 +300,8 @@ class PStratBot(BasePokerPlayer):
         
         if strat == 'deep_preflop_raise_raise':
             if not(self.street_was_raised): 
-                call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
-                amount = int((3+self.number_called(round_state))*self.big_blind_amount - call_amount)
+                #call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
+                amount = int((3+self.number_called(round_state))*self.big_blind_amount)
                 action, amount = self.raise_in_limits(amount, valid_actions)
             else:
                 amount = int(3*[action_desc['amount'] for action_desc in round_state['action_histories'][round_state['street']] if action_desc['action']=='RAISE'][-1])
@@ -287,21 +309,21 @@ class PStratBot(BasePokerPlayer):
                 
         elif strat == 'deep_preflop_raise_fold':
             if not(self.street_was_raised):
-                call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
-                amount = int((3+self.number_called(round_state))*self.big_blind_amount - call_amount)
+                #call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
+                amount = int((3+self.number_called(round_state))*self.big_blind_amount)
                 action, amount = self.raise_in_limits(amount, valid_actions)
             else:
                 action, amount = self.check_fold(valid_actions)
         
         elif strat == 'deep_postflop_raise_raise':
             if not(self.street_was_raised):
-                call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
+                #call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
                 amount = int((2/3)*round_state['pot']['main']['amount'])
                 action, amount = self.raise_in_limits(amount, valid_actions)
             else:
                 nb_raise_before = sum([action_desc['action']=='RAISE' for action_desc in round_state['action_histories'][round_state['street']]])
                 if nb_raise_before==1:
-                    last_raise = [action_desc['action']=='RAISE' for action_desc in round_state['action_histories'][round_state['street']]][-1]['amount']
+                    last_raise = [action_desc for action_desc in round_state['action_histories'][round_state['street']] if action_desc['action']=='RAISE'][-1]['amount']
                     amount = int(3*last_raise + round_state['pot']['main']['amount'])
                     action, amount = self.raise_in_limits(amount, valid_actions)
                 else:
@@ -364,7 +386,7 @@ class PStratBot(BasePokerPlayer):
     
     def raise_in_limits(self, amount, valid_actions):        
         #if no raise available, calling
-        if len([item for item in valid_actions if item['action'] == 'raise'])==0:
+        if [item for item in valid_actions if item['action'] == 'raise'][0]['amount']['max']==-1:
             action_in_limits = 'call'
             amount_in_limits = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
         else:
@@ -372,7 +394,8 @@ class PStratBot(BasePokerPlayer):
             max_raise = [item for item in valid_actions if item['action'] == 'raise'][0]['amount']['max']
             min_raise = [item for item in valid_actions if item['action'] == 'raise'][0]['amount']['min']
             if amount>max_raise:
-                print('Going all in')
+                if(my_verbose_upper):
+                    print('Going all in')
                 amount_in_limits = max_raise
             elif amount<min_raise:
                 amount_in_limits = min_raise
@@ -415,8 +438,14 @@ class PStratBot(BasePokerPlayer):
                         color_match[i]+=1
         for i in range(4): 
             if color_match[i]>=6:
-                flush_color = self.SUIT_MAP[2**(i+1)]
-                
+                flush_color = 2**(i+1)
+        """
+        #todelete
+        if round_state!='preflop':
+            print(flush_color)
+            print(self.hole_card[0].suit)
+            print(self.hole_card[1].suit)
+        """
         #there is a flush draw (of 4 cards) 
         if ((flush_color != None)
         #hole cards are suited (and in flush draw)
