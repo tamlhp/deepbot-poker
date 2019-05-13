@@ -222,8 +222,8 @@ def searchAllBets(table_img):
         bet_container.computeValue()
         #print(bet_container.value)
         bet_container.attributeEntity(glob_file.players, glob_file.table.center_pos)
-        if bet_container.corresponding_entity!='POT':
-            glob_file.players[bet_container.corresponding_entity].bet_value = bet_container.value
+        #if bet_container.corresponding_entity!='POT':
+        #    glob_file.players[bet_container.corresponding_entity].bet_value = bet_container.value
 
     glob_file.bet_containers.sort(key=lambda x: -1 if x.corresponding_entity == 'POT' else x.corresponding_entity)
 

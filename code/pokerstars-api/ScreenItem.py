@@ -152,7 +152,7 @@ class ScreenItem:
                 if(click_time=='random'):
                     time.sleep(int(random.choice('011'))*0.5*beta.rvs(alpha_smart,beta_, size=1)[0])
                 pyautogui.click()
-            print('Succesfuly handled movement');
+            print('Moved to: '+str(self.id));
             return
 
         else:

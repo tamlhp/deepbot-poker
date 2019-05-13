@@ -44,7 +44,7 @@ class PStratBot(BasePokerPlayer):
         """
         #DEBUGGING
         valid_actions = [{'action': 'fold', 'amount': 0}, {'action': 'call', 'amount': 100}, {'action': 'raise', 'amount': {'min': 150, 'max': 10000}}]
-        hole_card = ['SA','SK']
+        hole_card = ['S2','S4']
         round_state = {'action_histories': 
         {'turn': [{'paid': 0, 'uuid': 'dsitwxjfzukumvtbxangpv', 'action': 'CALL', 'amount': 0}, 
                   {'paid': 0, 'uuid': 'kydxboxhgkqcosfunbpkxs', 'action': 'CALL', 'amount': 0}], 
@@ -57,15 +57,15 @@ class PStratBot(BasePokerPlayer):
         'flop': [{'paid': 0, 'uuid': 'dsitwxjfzukumvtbxangpv', 'action': 'CALL', 'amount': 0}, 
                  {'paid': 0, 'uuid': 'kydxboxhgkqcosfunbpkxs', 'action': 'CALL', 'amount': 0}, 
                  {'paid': 0, 'uuid': 'wywinfwqxcrtocydvsszbc', 'action': 'CALL', 'amount': 0}]}, 
-        'community_card': ['HA', 'H4', 'H2', 'S7'], 'pot': {'main': {'amount': 300}, 'side': []}, 
+        'community_card': ['HQ', 'S2', 'HQ', 'D5'], 'pot': {'main': {'amount': 300}, 'side': []}, 
         'street': 'turn', 'dealer_btn': 0, 'next_player': 0, 'small_blind_amount': 50, 
         'seats': [{'state': 'participating', 'name': 'p1', 'uuid': 'wywinfwqxcrtocydvsszbc', 'stack': 9900}, 
                   {'state': 'participating', 'name': 'p2', 'uuid': 'dsitwxjfzukumvtbxangpv', 'stack': 9900}, 
                   {'state': 'participating', 'name': 'p3', 'uuid': 'kydxboxhgkqcosfunbpkxs', 'stack': 9900}, 
                   {'state': 'folded', 'name': 'p4', 'uuid': 'xkrwhpjormlqgduzvsivsb', 'stack': 10000}], 
         'small_blind_pos': 1, 'big_blind_pos': 2, 'round_count': 1}
-        """
         
+        """
         
         self.hole_card = gen_cards(hole_card)
         self.pos_group = self.define_position(round_state)
@@ -81,7 +81,8 @@ class PStratBot(BasePokerPlayer):
                 print('Street was raised')
         
         strat = self.define_strat(round_state)
-        print('Chosen strat: '+ str(strat))
+        if my_verbose_upper:
+            print('Chosen strat: '+ str(strat))
         action, amount = self.define_action(strat, round_state, valid_actions)
         
         return action, amount   # action returned here is sent to the poker engine
@@ -154,6 +155,7 @@ class PStratBot(BasePokerPlayer):
                 hand_score = HandEvaluator.eval_hand(self.hole_card,gen_cards(round_state['community_card']))
                 if (my_verbose):
                     print('Hand: ' + "{0:b}".format(hand_score))
+                three_of_a_kind_score = (1<<18)
                 two_pair_score = (1<<17)
                 pair_score = (1<<16)
                 """
@@ -165,7 +167,7 @@ class PStratBot(BasePokerPlayer):
                 print(two_pair_score)
                 """
                 #hand is two-pair or better
-                if(hand_score > two_pair_score):
+                if(hand_score >= three_of_a_kind_score):
                     strat = 'deep_postflop_raise_raise'
                 elif(hand_score & two_pair_score
                 #hole cards used in double pair
@@ -422,7 +424,7 @@ class PStratBot(BasePokerPlayer):
         if(id_==0):    
             return int(sum([hand_score & (1<<n) for n in range(12,16)])/(2**12))
         elif(id_==1):
-            return int(sum([hand_score & (1<<n) for n in range(8,12)])/(2**12))
+            return int(sum([hand_score & (1<<n) for n in range(8,12)])/(2**8))
         else:
             ##Error
             pass

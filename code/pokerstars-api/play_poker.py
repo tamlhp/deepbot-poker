@@ -65,6 +65,8 @@ while(True):
     #see if it is my turn to play
     if(glob_file.check.is_available or glob_file.fold.is_available):
         print("-> Heros' turn")
+        #wait some random time
+        time.sleep(0.1+0.6*beta.rvs(alpha_smart,beta_, size=1)[0])
         
         """#### UPDATE TABLE STATE ####"""
         updateTableState()

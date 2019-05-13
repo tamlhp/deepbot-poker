@@ -65,6 +65,9 @@ def init():
     global MAX_SBS_FOR_CLICKRAISE
     MAX_SBS_FOR_CLICKRAISE = 6
     
+    global POT_ZONE_LENGTH
+    POT_ZONE_LENGTH = 50
+    
     global INV_RANK_MAP
     INV_RANK_MAP = {
           '2' : 2,

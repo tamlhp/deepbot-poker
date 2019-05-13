@@ -18,8 +18,11 @@ from pypokerengine.engine.hand_evaluator import HandEvaluator
 from pypokerengine.players import BasePokerPlayer
 from pypokerengine.utils.card_utils import _pick_unused_card, _fill_community_card, gen_cards
 
-import itertools
-import glob_file
+#import itertools
+#import glob_file
+from data_preprocessing import prepare_net_inputs
+
+prepare_net_inputs()
 """
 print(estimate_win_rate(1000,2,['HA', 'SK']))
 print(estimate_win_rate(1000,2,['HA', 'SK']))

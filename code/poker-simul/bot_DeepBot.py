@@ -10,13 +10,14 @@ Created on Wed Apr 17 14:25:26 2019
 from pypokerengine.players import BasePokerPlayer
 from pypokerengine.utils.card_utils import _pick_unused_card, _fill_community_card, gen_cards
 import math
-from tools import value_estimator, write_declare_action_state,write_round_result_state, find_round_id, find_action_id 
+from tools import value_estimator, write_declare_action_state, write_round_start_state, write_round_result_state, find_round_id, find_action_id 
 import itertools
 
 my_verbose = False
 my_verbose_upper = False
 HAND_DATA_DECLARE_ACTION_CSV = '../../data/hand-data/test_declare_action.csv'
 HAND_DATA_ROUND_RESULT_CSV = '../../data/hand-data/test_round_result.csv'
+HAND_DATA_ROUND_START_CSV = '../../data/hand-data/test_round_start.csv'
 
 class DeepBot(BasePokerPlayer): #aka Master Bot  # Do not forget to make parent class as "BasePokerPlayer"
 
@@ -34,7 +35,8 @@ class DeepBot(BasePokerPlayer): #aka Master Bot  # Do not forget to make parent 
         action, amount = self.define_action(strat, round_state, valid_actions)
         #print(round_state)
         write_declare_action_state(action_id = self.action_id, round_id = self.round_id, valid_actions = valid_actions, 
-                                   hole_card = hole_card, round_state = round_state, csv_file = HAND_DATA_DECLARE_ACTION_CSV)
+                                   hole_card = hole_card, round_state = round_state, strat=strat, action=action, amount = amount,
+                                   csv_file = HAND_DATA_DECLARE_ACTION_CSV)
         self.action_id+=1
         return action, amount   # action returned here is sent to the poker engine
 
@@ -46,6 +48,8 @@ class DeepBot(BasePokerPlayer): #aka Master Bot  # Do not forget to make parent 
         pass
 
     def receive_round_start_message(self, round_count, hole_card, seats):
+        #print(seats)
+        write_round_start_state(round_id = self.round_id, seats = seats, csv_file = HAND_DATA_ROUND_START_CSV)
         pass
 
     def receive_street_start_message(self, street, round_state):

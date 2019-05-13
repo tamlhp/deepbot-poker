@@ -13,6 +13,7 @@ import pyautogui
 from ScreenItem import ScreenItem
 from Number import Number
 import math
+from extra_functions import angle_between
 
 import constants
 #import glob_file
@@ -39,6 +40,30 @@ class NumberContainer(ScreenItem):
         return
 
     def attributeEntity(self, players, table_center):
+        if ((self.numbers[0].left-table_center[0])**2 + (self.numbers[0].top-table_center[1])**2)**(1/2)<constants.POT_ZONE_LENGTH:
+            self.corresponding_entity = 'POT'
+        else:
+            vect_number_cont = [self.numbers[0].left-table_center[0],self.numbers[0].top-table_center[1]]
+            deg_number_cont = angle_between([1,0],vect_number_cont)
+            if(deg_number_cont<=0):
+                deg_number_cont+=360
+            for i in range(constants.NB_PLAYERS):
+                if((deg_number_cont>constants.DEG_PLAYERS[i]['left'] and deg_number_cont<=constants.DEG_PLAYERS[i]['right'])
+                    or ((constants.DEG_PLAYERS[i]['left']>constants.DEG_PLAYERS[i]['right'])  #special case to complete circle
+                    and (deg_number_cont>constants.DEG_PLAYERS[i]['left'] or deg_number_cont<=constants.DEG_PLAYERS[i]['right']))):
+                    self.corresponding_entity = i
+                    break
+            
+        if self.corresponding_entity!='POT':
+            players[self.corresponding_entity].bet_value = self.value
+
+        if(my_verbose):
+            print('[NumberContainer] Attributing '+str(self.type)+' of size '+str(self.value)+' to '+str(self.corresponding_entity))
+
+
+        return
+        """
+        #old implementation
         min_norm_2 = math.inf
         corresponding_entity_id = -1
         entity_is_player = None
@@ -69,3 +94,5 @@ class NumberContainer(ScreenItem):
 
         self.corresponding_entity = corresponding_entity_id
         return #corresponding_entity_id
+        """
+

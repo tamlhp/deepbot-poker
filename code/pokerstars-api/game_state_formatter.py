@@ -152,13 +152,13 @@ def format_screen_info():
         glob_file.previous_players = glob_file.players[glob_file.round_state['small_blind_pos']:]
     else:
         glob_file.previous_players = glob_file.players[1:]
-    glob_file.next_players = [player for pl in glob_file.players if (pl not in glob_file.previous_players and pl.id!=0)]
+    glob_file.next_players = [pl for pl in glob_file.players if (pl not in glob_file.previous_players and pl.id!=0)]
 
     #Filling info of bets currently on table, to round_state['action_histories']
     for player in glob_file.previous_players:
-        print('player: '+str(player.id)+ ' has put '+str(player.bet_value))
 
         if (not(player.is_folded)):
+            print('player: '+str(player.id)+ ' has put '+str(player.bet_value))
             if not(player.is_available):
                 action='FOLD'
                 player.is_folded = True
@@ -192,11 +192,10 @@ def format_screen_info():
         
     glob_file.previous_street = glob_file.round_state['street']
     if True:
-        print(glob_file.round_state['action_histories'])
+        print(glob_file.round_state)
         print('\n')
-        #print(glob_file.round_state)
 
 def write_hero_action(action, amount):
-    glob_file.round_state['action_histories'][glob_file.round_state['street']].append({'uuid':'uuid'+str(constants.HERO_POSITION), 'action': action, 'amount': amount+ glob_file.previous_bet_value, 'add_amount':amount, 'paid':amount-glob_file.players[0].last_bet_seen})
+    glob_file.round_state['action_histories'][glob_file.round_state['street']].append({'uuid':'uuid'+str(constants.HERO_POSITION), 'action': action, 'amount': amount, 'add_amount':amount-glob_file.previous_bet_value, 'paid':amount-glob_file.players[0].last_bet_seen})
     glob_file.previous_bet_value = amount + glob_file.previous_bet_value
     glob_file.players[0].last_seen_bet = amount + glob_file.previous_bet_value

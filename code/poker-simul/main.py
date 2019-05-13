@@ -13,18 +13,18 @@ from bot_PStratBot import PStratBot
 from bot_HandEvaluatingBot import HandEvaluatingBot
 from bot_DeepBot import DeepBot #aka Master Bot
 
-"""
-config = setup_config(max_round=20, initial_stack=3000, small_blind_amount=50)
+
+config = setup_config(max_round=100, initial_stack=3000, small_blind_amount=50)
 config.register_player(name="p1", algorithm=PStratBot())
 config.register_player(name="p2", algorithm=PStratBot())
 config.register_player(name="p3", algorithm=PStratBot())
 config.register_player(name="p4", algorithm=PStratBot())
 config.register_player(name="p5", algorithm=PStratBot())
 config.register_player(name="p6", algorithm=DeepBot())
-game_result = start_poker(config, verbose=1)
+game_result = start_poker(config, verbose=0)
 
 """
-config = setup_config(max_round=10000, initial_stack=10000, small_blind_amount=50)
+config = setup_config(max_round=1, initial_stack=10000, small_blind_amount=50)
 config.register_player(name="p1", algorithm=CallBot())
 config.register_player(name="p2", algorithm=CallBot())
 config.register_player(name="p3", algorithm=CallBot())
@@ -32,6 +32,6 @@ config.register_player(name="p4", algorithm=HandEvaluatingBot())
 config.register_player(name="p5", algorithm=HandEvaluatingBot())
 config.register_player(name="p6", algorithm=PStratBot())
 game_result = start_poker(config, verbose=1)
-
+"""
 
 print(game_result)
