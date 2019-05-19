@@ -11,59 +11,70 @@ from pypokerengine.utils.card_utils import _pick_unused_card, _fill_community_ca
 import pandas as pd
 import ast
 
-
+HAND_DATA_FEATURES_CSV = '../../data/hand-data/test_features.csv'
 my_verbose = True
 
-def prepare_net_inputs(declare_action_csv = '../../data/hand-data/test_declare_action.csv', 
+def prepare_net_inputs(declare_action_csv = '../../data/hand-data/test_action_declare.csv',
                        round_start_csv = '../../data/hand-data/test_round_start.csv',
                        round_result_csv = '../../data/hand-data/test_round_result.csv'):
-    nb_MC_simul = 10
+    nb_MC_simul = 100
     #declare_action_struct = ['round_id','action_id','hole_card','valid_actions','round_state']
     with open(declare_action_csv, 'r') as hand_data_csv:
         df_action = pd.read_csv(hand_data_csv)
-        
+
     with open(round_start_csv, 'r') as hand_data_csv:
         df_start = pd.read_csv(hand_data_csv, index_col = 0)
-    
+
     with open(round_result_csv, 'r') as hand_data_csv:
         df_result = pd.read_csv(hand_data_csv, index_col = 0)
-    
-    index = df_action.action_id
-    columns = ['hero_BBs', 'at_preflop', 'at_flop', 'at_turn', 'at_river', 'equity_preflop','equity_flop','equity_turn', 'equity_river', 'nb_players', 'strat', 'winnings']
 
-    
+    index = df_action.action_id
+    columns = ['hero_BBs', 'at_preflop', 'at_flop', 'at_turn', 'at_river',
+               'equity_preflop','equity_flop','equity_turn', 'equity_river',
+               'nb_players', 'action_fold', 'action_call', 'action_raise',
+               'amount', 'winnings']
+
+
     feature_list = []
-    for df_row in df_action.itertuples(index=True, name='ActionPoint'):
-        feature_row = {}        
+    for i, df_row in enumerate(df_action.itertuples(index=True, name='ActionPoint')):
+        feature_row = {}
         round_state = ast.literal_eval(df_row.round_state)
-        
+
         feature_row['hero_BBs'] = round_state['seats'][round_state['next_player']]['stack']/(2*round_state['small_blind_amount'])
         current_street = round_state['street']
         streets = ['preflop', 'flop', 'turn', 'river']
         for street in streets:
             if current_street == street: feature_row['at_'+street] = 1
             else: feature_row['at_'+street] = 0
-    
+
         nb_players = sum([player['state']!='folded' for player in round_state['seats']])
         feature_row['nb_players'] = nb_players
 
         for street in streets:
-            feature_row['equity_'+street] = estimate_win_rate(nb_simulation = nb_MC_simul, nb_player = nb_players, 
+            feature_row['equity_'+street] = estimate_win_rate(nb_simulation = nb_MC_simul, nb_player = nb_players,
                       hole_card = ast.literal_eval(df_row.hole_card), community_card = round_state['community_card'], to_street = street)
-        
-        feature_row['strat']= df_row.strat
-       
-        feature_row['winnings']= ast.literal_eval(df_result.loc[df_row.round_id].round_state)['seats'][round_state['next_player']]['stack'] \
-            - ast.literal_eval(df_start.loc[df_row.round_id].seats)[round_state['next_player']]['stack']
-        
-        if my_verbose and df_row.action_id%20==0:
+
+
+        #strategies = ['deep_preflop_raise_fold', 'deep_preflop_raise_raise', 'deep_postflop_raise_raise', 'short_shove', 'fold']
+        actions = ['fold','call','raise']
+        for action in actions:
+            if action == df_row.action: feature_row['action_'+action] = 1
+            else: feature_row['action_'+action] = 0
+
+        feature_row['amount']= df_row.amount/(2*round_state['small_blind_amount'])
+
+        feature_row['winnings']= (ast.literal_eval(df_result.loc[df_row.round_id].round_state)['seats'][round_state['next_player']]['stack'] \
+                               - ast.literal_eval(df_start.loc[df_row.round_id].seats)[round_state['next_player']]['stack']) \
+                           /(2*round_state['small_blind_amount'])
+
+        if my_verbose and df_row.action_id%100==0:
             print("At action id: " + str(df_row.action_id))
-        
+
         feature_list.append(feature_row)
-    
+
     df_net_features = pd.DataFrame(index=index, columns=columns, data=feature_list)
-    df_net_features.to_csv(index_label = 'action_id', path_or_buf ='../../data/hand-data/test_features.csv')    
-    
+    df_net_features.to_csv(index_label = 'action_id', path_or_buf = HAND_DATA_FEATURES_CSV)
+
 
 
     return
@@ -100,6 +111,8 @@ def montecarlo_simulation(nb_player, hole_card, community_card, to_street='river
 
 
 
+prepare_net_inputs()
+
 
 """
 valid_actions = [{'action': 'fold', 'amount': 0}, {'action': 'call', 'amount': 100}, {'action': 'raise', 'amount': {'min': 150, 'max': 10000}}]
@@ -124,5 +137,3 @@ round_state = {'action_histories':
               {'state': 'folded', 'name': 'p4', 'uuid': 'xkrwhpjormlqgduzvsivsb', 'stack': 10000}],
     'small_blind_pos': 1, 'big_blind_pos': 2, 'round_count': 1}
 """
-
-

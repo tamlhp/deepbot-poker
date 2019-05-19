@@ -11,22 +11,140 @@ from pypokerengine.api.game import setup_config, start_poker
 from bot_CallBot import  CallBot
 from bot_HandEvaluatingBot import HandEvaluatingBot, estimate_flop_odd, estimate_win_rate
 from bot_PStratBot import PStratBot
-
+import sys
+sys.path.append("..")
 
 
 from pypokerengine.engine.hand_evaluator import HandEvaluator
 from pypokerengine.players import BasePokerPlayer
 from pypokerengine.utils.card_utils import _pick_unused_card, _fill_community_card, gen_cards
-
+import time
 #import itertools
 #import glob_file
-from data_preprocessing import prepare_net_inputs
+#from data_preprocessing import prepare_net_inputs
+from deuces.card import Card
+from deuces.evaluator import Evaluator
+from deuces.deck import Deck
 
-prepare_net_inputs()
 """
-print(estimate_win_rate(1000,2,['HA', 'SK']))
-print(estimate_win_rate(1000,2,['HA', 'SK']))
+from ctypes import cdll
+lib = cdll.LoadLibrary('./libfoo.so')
 
+class Foo(object):
+    def __init__(self):
+        self.obj = lib.Foo_new()
+
+    def bar(self):
+        lib.Foo_bar(self.obj)
+
+f = Foo()
+f.bar()
+"""
+import numpy.ctypeslib as ctl
+import ctypes
+
+libname = 'libhandequity.so'
+libdir = '../hand-evaluators/OMPEval-fork/lib/'
+lib=ctl.load_library(libname, libdir)
+
+# Defining the python function from the library
+omp_hand_equity = lib.hand_equity
+# Determining its arguments types
+omp_hand_equity.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int]
+# Determining its return type
+omp_hand_equity.restype = ctypes.c_double
+# Defining the arguments
+hole_card = "9sTs"
+community_card = "8dAhKh"
+nb_players = 6
+# Calling the function (goes from python to C++ and back)
+hand_equity = omp_hand_equity(hole_card.encode(), community_card.encode(), nb_players) 
+print ("The equity is: " + str(hand_equity))
+print(results)
+#time_1 = time.time()
+time_2 = time.time()
+print((time_2-time_1)*1000)
+#print(results)
+
+
+"""
+from ctypes import cdll
+lib = cdll.LoadLibrary('./libClassEquity.so')
+#print(lib)
+
+class MyCClass(object):
+    def __init__(self):
+        self.obj = lib.ClassEquity_new()
+
+    def estimateHand(self):
+        lib.MyCClass_estimateHand(self.obj)
+
+acclass = MyCClass()
+acclass.etimateHand()
+"""
+
+"""
+time_1 = time.time()
+
+for i in range(10000):
+    board = deck.draw(5)
+Card.print_pretty_cards(board)
+
+time_2 = time.time()
+print((time_2-time_1)*1000)
+"""
+
+"""
+
+def deuces_estimate_win_rate(nb_simulation, nb_player, hole_card, community_card=None):
+    #if not community_card: community_card = []
+
+    # Make lists of Card objects out of the list of cards
+    #community_card = gen_cards(community_card)
+    #hole_card = gen_cards(hole_card)
+
+    # Estimate the win count by doing a Monte Carlo simulation
+    win_count = sum([deuces_montecarlo_simulation(nb_player, hole_card, community_card) for _ in range(nb_simulation)])
+    return 1.0 * win_count / nb_simulation
+
+
+def deuces_montecarlo_simulation(nb_player, hole_card, community_card):
+    deck = Deck()
+    for card in hole_card:
+        deck.remove_card(card)
+    # Do a Monte Carlo simulation given the current state of the game by evaluating the hands
+    board = deck.draw(5)
+    #_fill_community_card(community_card, used_card=hole_card + community_card)
+    #hole_card = deck.draw(2)
+    #unused_cards = _pick_unused_card((nb_player - 1) * 2, hole_card + community_card)
+    opponents_hole = deck.draw(2)#[unused_cards[2 * i:2 * i + 2] for i in range(nb_player - 1)]
+    opponents_score = [evaluator.evaluate(board, opponents_hole)]#[HandEvaluator.eval_hand(hole, community_card) for hole in opponents_hole]
+    my_score = evaluator.evaluate(board, hole_card)#HandEvaluator.eval_hand(hole_card, community_card)
+    #print(max(opponents_score))
+    return 1 if my_score >= max(opponents_score) else 0
+
+
+
+
+evaluator = Evaluator()
+hand = [Card.new('9h'),Card.new('Ts')]
+hand = ['H9', 'ST']
+
+time_1 = time.time()
+print(estimate_win_rate(1000,6,hand))
+time_2 = time.time()
+print((time_2-time_1)*1000)
+
+
+
+
+"""
+
+
+
+#print(estimate_win_rate(500,2,['HA', 'SK']))
+#print(estimate_win_rate(10000,2,['HA', 'SK']))
+"""
 print(estimate_flop_odd(1000,2,['HA', 'SK']))
 print(estimate_flop_odd(1000,2,['HA', 'SK']))
 """
