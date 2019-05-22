@@ -25,6 +25,30 @@ import time
 from deuces.card import Card
 from deuces.evaluator import Evaluator
 from deuces.deck import Deck
+import math
+### binomial distribution ###
+
+p_win = 0.55
+p_loss = 1-p_win
+n = 500
+k = 250
+
+sum_ = 0
+for i in range(k):
+    sum_ += math.factorial(n)/(math.factorial(k)*math.factorial(n-k))*p_win**i*p_loss**(n-i)
+print(sum_)
+
+
+
+
+"""
+hole_card = gen_cards(['SA','S2'])
+board_card = gen_cards(['C3','H4','H7'])
+hole_card = gen_cards(['SA','S2'])
+board_card = gen_cards(['C4','H3','H5'])
+val = HandEvaluator.search_straight(hole_card+board_card)
+print(bin(val))
+"""
 
 """
 from ctypes import cdll
@@ -39,6 +63,8 @@ class Foo(object):
 
 f = Foo()
 f.bar()
+"""
+
 """
 import numpy.ctypeslib as ctl
 import ctypes
@@ -65,6 +91,7 @@ print(results)
 time_2 = time.time()
 print((time_2-time_1)*1000)
 #print(results)
+"""
 
 
 """

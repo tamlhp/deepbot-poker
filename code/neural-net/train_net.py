@@ -37,7 +37,7 @@ hand_data = args.hands_csv
 """
 
 
-torch.set_default_tensor_type('torch.cuda.FloatTensor')
+#torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 ##load data
 train_input, train_target, test_input, test_target = load_data('../../data/hand-data/'+'features.csv')

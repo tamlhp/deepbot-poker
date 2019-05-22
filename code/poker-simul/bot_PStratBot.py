@@ -36,6 +36,7 @@ class PStratBot(BasePokerPlayer):
         #print(str(round_state) + '\n')
         #hole_card = ['DK', 'HJ']
         #round_state['community_card'] = ['HK', 'S8', 'DQ']
+
         """
         print("hole_card:" + str(hole_card))
         print("valid_actions:"+ str(valid_actions))

@@ -35,12 +35,8 @@ def format_screen_info():
                 glob_file.round_state['small_blind_amount']=int(player.bet_value/2)
                 #writing small blind 'bet'
                 glob_file.round_state['action_histories']['preflop'].append({'uuid':'uuid'+str((player.id-1)%len(glob_file.players)), 'action': 'SMALLBLIND', 'amount': glob_file.round_state['small_blind_amount'], 'add_amount':glob_file.round_state['small_blind_amount'], 'paid':glob_file.round_state['small_blind_amount']})
-                glob_file.players[(player.id-1)%len(glob_file.players)].last_bet_seen = glob_file.round_state['small_blind_amount']
                 #writing big blind 'bet'
                 glob_file.round_state['action_histories']['preflop'].append({'uuid':'uuid'+str(player.id), 'action': 'BIGBLIND', 'amount': 2*glob_file.round_state['small_blind_amount'], 'add_amount':glob_file.round_state['small_blind_amount'], 'paid':2*glob_file.round_state['small_blind_amount']})
-                player.last_bet_seen = 2*glob_file.round_state['small_blind_amount']
-            else:
-                player.last_bet_seen = 0
                 
         glob_file.street_price = 2*glob_file.round_state['small_blind_amount']
         glob_file.previous_bet_value = 2*glob_file.round_state['small_blind_amount']
@@ -148,6 +144,10 @@ def format_screen_info():
         else:
             glob_file.previous_players = glob_file.players[cutoff_id:]
         glob_file.new_street = False
+        glob_file.players[glob_file.round_state['small_blind_pos']].last_bet_seen = glob_file.round_state['small_blind_amount']
+        glob_file.players[glob_file.round_state['big_blind_pos']].last_bet_seen = 2*glob_file.round_state['small_blind_amount']
+        glob_file.players[(player.id-1)%len(glob_file.players)].last_bet_seen = glob_file.round_state['small_blind_amount']
+
     elif glob_file.new_street:
         glob_file.previous_players = glob_file.players[glob_file.round_state['small_blind_pos']:]
     else:
@@ -156,7 +156,8 @@ def format_screen_info():
 
     #Filling info of bets currently on table, to round_state['action_histories']
     for player in glob_file.previous_players:
-
+        print(player.id)
+        print(player.last_bet_seen)
         if (not(player.is_folded)):
             print('player: '+str(player.id)+ ' has put '+str(player.bet_value))
             if not(player.is_available):
@@ -164,7 +165,9 @@ def format_screen_info():
                 player.is_folded = True
                 glob_file.round_state['action_histories'][glob_file.round_state['street']].append({'uuid':'uuid'+str(player.id), 'action': action, 'amount': 0, 'add_amount':0, 'paid':0})
             else:
-                if player.bet_value == glob_file.previous_bet_value:
+                if player.bet_value == player.last_bet_seen: #happens for BB
+                    action='CHECK'
+                elif player.bet_value == glob_file.previous_bet_value:
                     action='CALL'
                 elif player.bet_value > glob_file.previous_bet_value:
                     action='RAISE'
@@ -180,8 +183,9 @@ def format_screen_info():
                 
                 
     #update 'seats' (player infos)
+    glob_file.round_state['seats']=[]
     for i, player in enumerate(glob_file.players):
-        glob_file.round_state['seats']=[]
+
         if player.is_folded:
             state = 'folded'
         else: 
