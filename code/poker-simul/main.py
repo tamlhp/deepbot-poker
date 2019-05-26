@@ -11,6 +11,7 @@ from pypokerengine.api.game import setup_config, start_poker
 from bot_TestBot import TestBot
 from bot_CallBot import CallBot
 from bot_PStratBot import PStratBot
+from bot_LSTMBot import LSTMBot
 from bot_HandEvaluatingBot import HandEvaluatingBot
 from bot_DeepBot import DeepBot #aka Master Bot
 import time
@@ -39,16 +40,12 @@ game_result = start_poker(config, verbose=0)
 
 time_1 = time.time()
 config = setup_config(max_round=1000, initial_stack=200000, small_blind_amount=5)
-config.register_player(name="p3", algorithm=HandEvaluatingBot())
-config.register_player(name="p4", algorithm=PStratBot())
-config.register_player(name="p3", algorithm=HandEvaluatingBot())
-config.register_player(name="p4", algorithm=PStratBot())
-config.register_player(name="p3", algorithm=HandEvaluatingBot())
-config.register_player(name="p4", algorithm=PStratBot())
-game_result = start_poker(config, verbose=0)
+config.register_player(name="p1", algorithm=TestBot())
+config.register_player(name="p2", algorithm=LSTMBot(None))
+game_result = start_poker(config, verbose=1)
 time_2 = time.time()
-print(str(time_2-time_1))
-print(game_result)
+#print(str(time_2-time_1))
+#print(game_result)
 
 
 """

@@ -6,13 +6,14 @@ Created on Fri Mar 22 14:37:11 2019
 @author: cyril
 """
 
+import sys
+sys.path.append('../PyPokerEngine_fork')
 
 from pypokerengine.api.game import setup_config, start_poker
 from bot_CallBot import  CallBot
-from bot_HandEvaluatingBot import HandEvaluatingBot, estimate_flop_odd, estimate_win_rate
+from bot_HandEvaluatingBot import HandEvaluatingBot
 from bot_PStratBot import PStratBot
-import sys
-sys.path.append("..")
+
 
 
 from pypokerengine.engine.hand_evaluator import HandEvaluator
@@ -22,22 +23,40 @@ import time
 #import itertools
 #import glob_file
 #from data_preprocessing import prepare_net_inputs
-from deuces.card import Card
-from deuces.evaluator import Evaluator
-from deuces.deck import Deck
-import math
+#from deuces.card import Card
+#from deuces.evaluator import Evaluator
+#from deuces.deck import Deck
+#import math
 ### binomial distribution ###
 
-p_win = 0.55
-p_loss = 1-p_win
-n = 500
-k = 250
 
-sum_ = 0
-for i in range(k):
-    sum_ += math.factorial(n)/(math.factorial(k)*math.factorial(n-k))*p_win**i*p_loss**(n-i)
-print(sum_)
+from multiprocessing import Pool
 
+def run_once():
+    config = setup_config(max_round=1000, initial_stack=200000, small_blind_amount=5)
+    config.register_player(name="p1", algorithm=CallBot())
+    config.register_player(name="p2", algorithm=HandEvaluatingBot())
+    config.register_player(name="p3", algorithm=CallBot())
+    config.register_player(name="p4", algorithm=HandEvaluatingBot())
+    config.register_player(name="p5", algorithm=CallBot())
+    config.register_player(name="p6", algorithm=HandEvaluatingBot())
+    game_result = start_poker(config, verbose=0)
+    print(game_result)
+    return
+
+if __name__ == '__main__':
+    time_1 = time.time()
+    pool = Pool(processes=1)              # start 4 worker processes
+    #result = pool.apply_async(f, [10])    # evaluate "f(10)" asynchronously
+    #print(result.get(timeout=1))           # prints "100" unless your computer is *very* slow
+    for i in range(1):
+        pool.apply_async(run_once)
+
+    pool.close()
+    pool.join()
+    time_2 = time.time()
+    print(str(time_2-time_1))
+    
 
 
 

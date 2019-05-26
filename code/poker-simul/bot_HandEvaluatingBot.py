@@ -46,33 +46,34 @@ class HandEvaluatingBot(BasePokerPlayer):
         self.losses = 0
 
     def declare_action(self, valid_actions, hole_card, round_state):
+        print(round_state)
         self.num_active_players = sum([player['state']=='participating' for player in round_state['seats']])
         # Estimate the win rate
         win_rate = omp_hand_equity(format_cards(hole_card).encode(), format_cards(round_state['community_card']).encode(), 
                                      self.num_active_players, nb_board_cards, std_err_tol, verbose)
+        print(win_rate)
         
         if(my_verbose):    
             print("My cards are: "+ str(hole_card))
             print("My win rate is of: "+str(win_rate)+ "% with num_active_players: " +str(self.num_active_players))
             pass
         # Check whether it is possible to call
-        can_call = len([item for item in valid_actions if item['action'] == 'call']) > 0
-        if can_call:
+        #can_call = len([item for item in valid_actions if item['action'] == 'call']) > 0
+        #if can_call:
             # If so, compute the amount that needs to be called
-            call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
-        else:
-            call_amount = 0
+        call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
+        #else:
+         #   call_amount = 0
 
         amount = None
-
         # If the win rate is large enough, then raise / call
         if win_rate > 1/self.num_players:
             raise_amount_options = [item for item in valid_actions if item['action'] == 'raise'][0]['amount']
-            if win_rate > 2:#1.8/self.num_players:
+            if win_rate > 1.8/self.num_players:
                 # If it is extremely likely to win, then raise as much as possible
                 action = 'raise'
                 amount = raise_amount_options['max']
-            elif win_rate > 2:# 1.2/self.num_players:
+            elif win_rate > 1.2/self.num_players:
                 # If it is likely to win, then raise by the minimum amount possible
                 action = 'raise'
                 amount = raise_amount_options['min']
@@ -80,19 +81,17 @@ class HandEvaluatingBot(BasePokerPlayer):
                 # If there is a chance to win, then call
                 action = 'call'
                 amount = call_amount
+        elif call_amount == 0:
+            action = 'call'
+            amount = call_amount
         else:
-            action = 'call' if can_call and call_amount == 0 else 'fold'
+            action = 'fold'
+            amount = 0
 
         if amount == -1:
             #want to raise but can only call
             action = 'call'
             amount = call_amount
-
-        if amount is None:
-            # Set the amount for calling or folding
-            items = [item for item in valid_actions if item['action'] == action]
-            amount = items[0]['amount']
-
         if(my_verbose):
             print("Taking action :"+ str(action))
         return action, amount
