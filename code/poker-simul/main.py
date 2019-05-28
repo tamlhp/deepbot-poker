@@ -12,8 +12,9 @@ from bot_TestBot import TestBot
 from bot_CallBot import CallBot
 from bot_PStratBot import PStratBot
 from bot_LSTMBot import LSTMBot
-from bot_HandEvaluatingBot import HandEvaluatingBot
+from bot_EquityBot import EquityBot
 from bot_DeepBot import DeepBot #aka Master Bot
+from bot_ManiacBot import ManiacBot
 import time
 
 """
@@ -27,22 +28,12 @@ config.register_player(name="p6", algorithm=DeepBot())
 game_result = start_poker(config, verbose=1)
 """
 
-"""
-config = setup_config(max_round=10, initial_stack=10000, small_blind_amount=50)
-config.register_player(name="p1", algorithm=CallBot())
-config.register_player(name="p2", algorithm=HandEvaluatingBot())
-config.register_player(name="p3", algorithm=HandEvaluatingBot())
-config.register_player(name="p4", algorithm=PStratBot())
-config.register_player(name="p5", algorithm=PStratBot())
-config.register_player(name="p6", algorithm=PStratBot())
-game_result = start_poker(config, verbose=0)
-"""
-
 time_1 = time.time()
-config = setup_config(max_round=1000, initial_stack=200000, small_blind_amount=5)
+config = setup_config(max_round=3, initial_stack=200000, small_blind_amount=5)
 config.register_player(name="p1", algorithm=TestBot())
-config.register_player(name="p2", algorithm=LSTMBot(None))
-game_result = start_poker(config, verbose=1)
+config.register_player(name="p2", algorithm=ManiacBot())
+cst_cheat_ids = list(range(1,21))+list(range(2,22)) + list(range(3, 23)) 
+game_result = start_poker(config, verbose=1, cheat = True, cst_cheat_ids = cst_cheat_ids)
 time_2 = time.time()
 #print(str(time_2-time_1))
 #print(game_result)
@@ -51,7 +42,7 @@ time_2 = time.time()
 """
 time1 = time.time()
 config = setup_config(max_round=1000, initial_stack=200000, small_blind_amount=10)
-config.register_player(name="p1", algorithm=HandEvaluatingBot())
+config.register_player(name="p1", algorithm=EquityBot())
 config.register_player(name="p2", algorithm=CallBot())
 game_result = start_poker(config, verbose=0)
 

@@ -14,6 +14,7 @@ class TestBot(BasePokerPlayer):  # Do not forget to make parent class as "BasePo
 
     #  we define the logic to make an action through this method. (so this method would be the core of your AI)
     def declare_action(self, valid_actions, hole_card, round_state):
+        print(valid_actions)
         action = None
         amount = None               
         raise_amount_options = [item for item in valid_actions if item['action'] == 'raise'][0]['amount']

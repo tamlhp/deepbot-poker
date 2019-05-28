@@ -1,0 +1,2 @@
+round_id,seats
+0,"[{'uuid': 'uuid-1', 'name': 'call_bot', 'state': 'participating', 'stack': 19900}, {'uuid': 'uuid-2', 'name': 'lstm_bot', 'state': 'participating', 'stack': 19950}]"

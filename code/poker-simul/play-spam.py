@@ -11,7 +11,7 @@ sys.path.append('../PyPokerEngine_fork')
 
 from pypokerengine.api.game import setup_config, start_poker
 from bot_CallBot import  CallBot
-from bot_HandEvaluatingBot import HandEvaluatingBot
+from bot_EquityBot import EquityBot
 from bot_PStratBot import PStratBot
 
 
@@ -28,38 +28,47 @@ import time
 #from deuces.deck import Deck
 #import math
 ### binomial distribution ###
+from utils_simul import compute_ANE
 
+log_dir = './simul_data'
+simul_id = 0 ## simul id
+gen_id = 0 ## gen id
+gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
 
-from multiprocessing import Pool
+nb_bots = 50
+nb_hands = 1
+sb_amount = 50
 
-def run_once():
-    config = setup_config(max_round=1000, initial_stack=200000, small_blind_amount=5)
-    config.register_player(name="p1", algorithm=CallBot())
-    config.register_player(name="p2", algorithm=HandEvaluatingBot())
-    config.register_player(name="p3", algorithm=CallBot())
-    config.register_player(name="p4", algorithm=HandEvaluatingBot())
-    config.register_player(name="p5", algorithm=CallBot())
-    config.register_player(name="p6", algorithm=HandEvaluatingBot())
-    game_result = start_poker(config, verbose=0)
-    print(game_result)
-    return
-
-if __name__ == '__main__':
-    time_1 = time.time()
-    pool = Pool(processes=1)              # start 4 worker processes
-    #result = pool.apply_async(f, [10])    # evaluate "f(10)" asynchronously
-    #print(result.get(timeout=1))           # prints "100" unless your computer is *very* slow
-    for i in range(1):
-        pool.apply_async(run_once)
-
-    pool.close()
-    pool.join()
-    time_2 = time.time()
-    print(str(time_2-time_1))
+def selection_gen_bots(log_dir, simul_id, gen_id, BB, nb_bots):
     
+    ANEs = compute_ANE(gen_dir, BB)
+    ord_bot_ids = [el+1 for el in sorted(range(len(ANEs)), key=lambda i:ANEs[i], reverse=True)]
+
+    #surv_bot_ids = ord_bot_ids[:int(surv_perc*nb_bots)]
+    
+    #prime_perc = 0.15
+    surv_perc = 0.3
+    #prime_bot_ids = ord_bot_ids[:int(prime_perc*nb_bots)]
+    #second_bot_ids = ord_bot_ids[int(prime_perc*nb_bots):int(surv_perc*nb_bots)]
+    surv_bot_ids = ord_bot_ids[:int(surv_perc*nb_bots)]
+    
+    surv_ANEs = [ANEs[i-1] for i in surv_bot_ids]
+
+    print(ANEs)
+    print(sum(surv_ANEs)/float(len(surv_ANEs)))
+    
+    prime_bot_ids = [id_ for id_ in surv_bot_ids if ANEs[id_-1] > sum(surv_ANEs)/float(len(surv_ANEs))]
+    second_bot_ids = [id_ for id_ in surv_bot_ids if not(ANEs[id_-1] > sum(surv_ANEs)/float(len(surv_ANEs)))]
+    
+    print(surv_bot_ids)
+    print(prime_bot_ids)
+
+#selection_gen_bots(log_dir, simul_id, gen_id, BB=2*sb_amount, nb_bots = 50)
 
 
-
+import multiprocessing as mp
+n_cores = mp.cpu_count()
+print(n_cores)
 """
 hole_card = gen_cards(['SA','S2'])
 board_card = gen_cards(['C3','H4','H7'])

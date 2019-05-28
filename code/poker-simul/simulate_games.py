@@ -1,27 +1,49 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed May 15 13:15:22 2019
+Created on Tue May 28 12:12:27 2019
 
 @author: cyril
 """
-
-from pypokerengine.api.game import setup_config, start_poker
-from bot_TestBot import TestBot
-from bot_CallBot import CallBot
-from bot_PStratBot import PStratBot
-from bot_HandEvaluatingBot import HandEvaluatingBot
-from bot_DeepBot import DeepBot #aka Master Bot
+from utils_simul import gen_rand_bots, gen_decks, run_one_game, compute_ANE
+import pickle
+from multiprocessing import Pool
+import time
 
 
-for i in range(100):
-    config = setup_config(max_round=500, initial_stack=1500, small_blind_amount=15)
-    config.register_player(name="p1", algorithm=PStratBot())
-    config.register_player(name="p2", algorithm=PStratBot())
-    config.register_player(name="p3", algorithm=PStratBot())
-    config.register_player(name="p4", algorithm=PStratBot())
-    config.register_player(name="p5", algorithm=PStratBot())
-    config.register_player(name="p6", algorithm=DeepBot())
-    game_result = start_poker(config, verbose=0)
-    if(i%10==0):
-        print("At game number: "+str(i))
+
+if __name__ == '__main__':
+    time_1 = time.time()
+    pool = Pool(processes=50)              # start 4 worker processes
+    
+    log_dir = './simul_data'
+    simul_id = 0 ## simul id
+    gen_id = 0 ## gen id
+    gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
+    nb_bots = 8
+    nb_hands = 500
+    sb_amount = 50
+    ini_stack = 20000
+    
+    ## prepare first gen lstm bots and hands 
+    gen_rand_bots(simul_id = 0,gen_id=0, log_dir=log_dir)
+    gen_decks(simul_id=0,gen_id=0, log_dir=log_dir)
+    ## play matches
+    for bot_id in range(1,nb_bots+1):
+        with open(gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'.pkl', 'rb') as f:  
+            lstm_bot = pickle.load(f)
+        pool.apply_async(run_one_game,(), dict(simul_id = 0, gen_id = 0, lstm_bot=lstm_bot, log_dir = log_dir, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands))
+    pool.close()
+    pool.join()
+    time_2 = time.time()
+    
+    print(time_2-time_1)
+    
+
+
+## evolve according to results
+#compute_ANE(gen_dir)
+    
+## prepare second gen lstm bots and hands
+    
+## play matches

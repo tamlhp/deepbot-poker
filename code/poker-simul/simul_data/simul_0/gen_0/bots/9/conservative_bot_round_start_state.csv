@@ -1,0 +1,12 @@
+round_id,seats
+0,"[{'uuid': 'uuid-1', 'name': 'conservative_bot', 'state': 'participating', 'stack': 19900}, {'uuid': 'uuid-2', 'name': 'lstm_bot', 'state': 'participating', 'stack': 19950}]"
+1,"[{'uuid': 'uuid-1', 'name': 'conservative_bot', 'state': 'participating', 'stack': 20000}, {'uuid': 'uuid-2', 'name': 'lstm_bot', 'state': 'participating', 'stack': 19850}]"
+2,"[{'uuid': 'uuid-1', 'name': 'conservative_bot', 'state': 'participating', 'stack': 19900}, {'uuid': 'uuid-2', 'name': 'lstm_bot', 'state': 'participating', 'stack': 19950}]"
+3,"[{'uuid': 'uuid-1', 'name': 'conservative_bot', 'state': 'participating', 'stack': 20000}, {'uuid': 'uuid-2', 'name': 'lstm_bot', 'state': 'participating', 'stack': 19850}]"
+4,"[{'uuid': 'uuid-1', 'name': 'conservative_bot', 'state': 'participating', 'stack': 19900}, {'uuid': 'uuid-2', 'name': 'lstm_bot', 'state': 'participating', 'stack': 19950}]"
+round_id,seats
+0,"[{'uuid': 'uuid-1', 'name': 'lstm_bot', 'state': 'participating', 'stack': 19900}, {'uuid': 'uuid-2', 'name': 'conservative_bot', 'state': 'participating', 'stack': 19950}]"
+1,"[{'uuid': 'uuid-1', 'name': 'lstm_bot', 'state': 'participating', 'stack': 20000}, {'uuid': 'uuid-2', 'name': 'conservative_bot', 'state': 'participating', 'stack': 19850}]"
+2,"[{'uuid': 'uuid-1', 'name': 'lstm_bot', 'state': 'participating', 'stack': 19900}, {'uuid': 'uuid-2', 'name': 'conservative_bot', 'state': 'participating', 'stack': 19950}]"
+3,"[{'uuid': 'uuid-1', 'name': 'lstm_bot', 'state': 'participating', 'stack': 20000}, {'uuid': 'uuid-2', 'name': 'conservative_bot', 'state': 'participating', 'stack': 19850}]"
+4,"[{'uuid': 'uuid-1', 'name': 'lstm_bot', 'state': 'participating', 'stack': 19900}, {'uuid': 'uuid-2', 'name': 'conservative_bot', 'state': 'participating', 'stack': 19950}]"
