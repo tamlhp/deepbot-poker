@@ -60,10 +60,10 @@ def run_one_game(simul_id , gen_id, lstm_bot, log_dir = './simul_data', nb_hands
         #earnings[opp_name+'_2'] = game_result['players'][0]['stack']
         earnings[opp_name] = game_result_1['players'][1]['stack'] + game_result_2['players'][0]['stack'] - 2*ini_stack
         
-    with open(gen_dir+'/bots/'+str(lstm_bot.id)+'/earnings.pkl', 'wb') as f:  
-        pickle.dump(earnings, f)
-    print('Done with one game')
-    return
+
+    print('Done with game of bot number: '+ str(lstm_bot.id))
+    
+    return earnings
 
 
 def gen_decks(simul_id, gen_id, log_dir = './simul_data', nb_hands = 500):
@@ -107,3 +107,29 @@ def compute_ANE(gen_dir, BB, nb_opps = 4):
     
     return np.sum(earnings_arr/n_j, axis = 1)/nb_opps
     
+
+def selection_gen_bots(log_dir, simul_id, gen_id, BB, nb_bots):
+    
+    ANEs = compute_ANE(gen_dir, BB)
+    ord_bot_ids = [el+1 for el in sorted(range(len(ANEs)), key=lambda i:ANEs[i], reverse=True)]
+
+    #surv_bot_ids = ord_bot_ids[:int(surv_perc*nb_bots)]
+    
+    #prime_perc = 0.15
+    surv_perc = 0.3
+    #prime_bot_ids = ord_bot_ids[:int(prime_perc*nb_bots)]
+    #second_bot_ids = ord_bot_ids[int(prime_perc*nb_bots):int(surv_perc*nb_bots)]
+    surv_bot_ids = ord_bot_ids[:int(surv_perc*nb_bots)]
+    
+    surv_ANEs = [ANEs[i-1] for i in surv_bot_ids]
+
+    print(ANEs)
+    print(sum(surv_ANEs)/float(len(surv_ANEs)))
+    
+    prime_bot_ids = [id_ for id_ in surv_bot_ids if ANEs[id_-1] > sum(surv_ANEs)/float(len(surv_ANEs))]
+    second_bot_ids = [id_ for id_ in surv_bot_ids if not(ANEs[id_-1] > sum(surv_ANEs)/float(len(surv_ANEs)))]
+    
+    
+    
+    print(surv_bot_ids)
+    print(prime_bot_ids)

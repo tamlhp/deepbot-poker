@@ -7,6 +7,7 @@ Created on Fri May 24 23:57:43 2019
 """
 import sys
 sys.path.append('../neural-net')
+sys.path.append('../PyPokerEngine_fork')
 from pypokerengine.players import BasePokerPlayer
 import torch
 from torch import nn

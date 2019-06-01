@@ -1,5 +1,0 @@
-round_id,seats
-0,"[{'uuid': 'uuid-1', 'name': 'call_bot', 'state': 'participating', 'stack': 19900}, {'uuid': 'uuid-2', 'name': 'lstm_bot', 'state': 'participating', 'stack': 19950}]"
-1,"[{'uuid': 'uuid-1', 'name': 'call_bot', 'state': 'participating', 'stack': 20000}, {'uuid': 'uuid-2', 'name': 'lstm_bot', 'state': 'participating', 'stack': 19850}]"
-2,"[{'uuid': 'uuid-1', 'name': 'call_bot', 'state': 'participating', 'stack': 20050}, {'uuid': 'uuid-2', 'name': 'lstm_bot', 'state': 'participating', 'stack': 19800}]"
-3,"[{'uuid': 'uuid-1', 'name': 'call_bot', 'state': 'participating', 'stack': 20150}, {'uuid': 'uuid-2', 'name': 'lstm_bot', 'state': 'participating', 'stack': 19700}]"

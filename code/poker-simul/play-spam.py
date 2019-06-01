@@ -28,7 +28,7 @@ import time
 #from deuces.deck import Deck
 #import math
 ### binomial distribution ###
-from utils_simul import compute_ANE
+from utils_simul import compute_ANE, selection_gen_bots
 
 log_dir = './simul_data'
 simul_id = 0 ## simul id
@@ -39,29 +39,7 @@ nb_bots = 50
 nb_hands = 1
 sb_amount = 50
 
-def selection_gen_bots(log_dir, simul_id, gen_id, BB, nb_bots):
-    
-    ANEs = compute_ANE(gen_dir, BB)
-    ord_bot_ids = [el+1 for el in sorted(range(len(ANEs)), key=lambda i:ANEs[i], reverse=True)]
 
-    #surv_bot_ids = ord_bot_ids[:int(surv_perc*nb_bots)]
-    
-    #prime_perc = 0.15
-    surv_perc = 0.3
-    #prime_bot_ids = ord_bot_ids[:int(prime_perc*nb_bots)]
-    #second_bot_ids = ord_bot_ids[int(prime_perc*nb_bots):int(surv_perc*nb_bots)]
-    surv_bot_ids = ord_bot_ids[:int(surv_perc*nb_bots)]
-    
-    surv_ANEs = [ANEs[i-1] for i in surv_bot_ids]
-
-    print(ANEs)
-    print(sum(surv_ANEs)/float(len(surv_ANEs)))
-    
-    prime_bot_ids = [id_ for id_ in surv_bot_ids if ANEs[id_-1] > sum(surv_ANEs)/float(len(surv_ANEs))]
-    second_bot_ids = [id_ for id_ in surv_bot_ids if not(ANEs[id_-1] > sum(surv_ANEs)/float(len(surv_ANEs)))]
-    
-    print(surv_bot_ids)
-    print(prime_bot_ids)
 
 #selection_gen_bots(log_dir, simul_id, gen_id, BB=2*sb_amount, nb_bots = 50)
 
@@ -69,6 +47,18 @@ def selection_gen_bots(log_dir, simul_id, gen_id, BB, nb_bots):
 import multiprocessing as mp
 n_cores = mp.cpu_count()
 print(n_cores)
+
+import os
+print(os.sched_getaffinity(0))
+
+os.sched_setaffinity(0, {1, 3})
+print(os.sched_getaffinity(0))
+x = {i for i in range(64)}
+
+os.sched_setaffinity(0, x)
+print(os.sched_getaffinity(0))
+
+print(mp.cpu_count())
 """
 hole_card = gen_cards(['SA','S2'])
 board_card = gen_cards(['C3','H4','H7'])
