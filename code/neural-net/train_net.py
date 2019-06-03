@@ -8,6 +8,9 @@ Created on Wed Apr 17 14:43:26 2019
 
 #from pypokerengine.utils.card_utils import gen_cards, estimate_hole_card_win_rate
 #import argpars
+
+import mkl
+mkl.set_num_threads(1)
 import torch
 from torch.autograd import Variable
 from torch import nn

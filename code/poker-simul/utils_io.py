@@ -7,7 +7,7 @@ Created on Tue May 28 13:40:29 2019
 """
 
 import csv
-
+from collections import OrderedDict as OrderedDict
 
 def write_declare_action_state(action_id, round_id, valid_actions, hole_card, round_state, strat, action, amount, csv_file = './test_declare_action.csv'):
     state_row = [{'round_id': round_id, 'action_id': action_id, 'hole_card':hole_card, 'valid_actions':valid_actions, 
@@ -55,3 +55,17 @@ def find_round_id(csv_file = './test_round_results.csv'):
     except:
         next_round_id = 0
     return next_round_id
+
+    
+def get_sep_dicts(full_dict):
+    state_dict = OrderedDict()
+    i_opp = {}
+    i_gen = {}
+    for layer in sorted(full_dict.keys()):
+        if layer[:3] == 'opp':
+            i_opp[layer] = full_dict[layer]
+        elif layer[:3] =='gen': 
+            i_gen[layer] = full_dict[layer]
+        else: 
+            state_dict[layer] = full_dict[layer]
+    return state_dict, i_opp, i_gen

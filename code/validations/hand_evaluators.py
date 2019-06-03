@@ -10,6 +10,8 @@ Created on Fri Mar 22 14:37:11 2019
 
 import sys
 sys.path.append("..")
+import sys
+sys.path.append('../PyPokerEngine_fork')
 import time
 
 
@@ -21,7 +23,7 @@ import numpy.ctypeslib as ctl
 import ctypes
 libname = 'libhandequity.so'
 # The path may have to be changed
-libdir = '../OMPEval-fork/lib/'
+libdir = '../OMPEval_fork/lib/'
 lib = ctl.load_library(libname, libdir)
 
 # Defining the python function from the library
@@ -33,7 +35,7 @@ omp_hand_equity.restype = ctypes.c_double
 hole_card = "9sKs"  # 9 of spades and ten of spades
 community_card = "8dAhKh" # Number of cards defined here may very between 0 and 5
 nb_players = 6 # Number of players may vary between 2 and 6
-nb_board_cards = 3 # Default is 5. If = 3, showdown is at flop
+nb_board_cards = 5 # Default is 5. If = 3, showdown is at flop
 std_err_tol = 10**-3 # Default is 10**-5. This is the std in % at which the hand equity will be returned
 verbose = True # Default is False
 time_1 = time.time()

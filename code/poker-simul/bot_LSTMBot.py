@@ -6,7 +6,7 @@ Created on Fri May 24 23:57:43 2019
 @author: cyril
 """
 import sys
-sys.path.append('../neural-net')
+#sys.path.append('../neural-net')
 sys.path.append('../PyPokerEngine_fork')
 from pypokerengine.players import BasePokerPlayer
 import torch
@@ -14,13 +14,14 @@ from torch import nn
 import os
 #from functools import reduce
 #from utils import comp_tot_params, get_flat_params, get_dict_sizes, get_full_dict
-from utils import get_sep_dicts
+from utils_io import get_sep_dicts
 from utils_bot import get_tot_pot, comp_hand_equity, decision_algo
 
 my_verbose_upper = False
 write_details = False
 
 from utils_io import write_declare_action_state, write_round_start_state, write_round_result_state, find_action_id, find_round_id
+#mkl.set_num_threads(1)
 
 class Net(nn.Module):
     def __init__(self, i_opp, i_gen):
@@ -75,8 +76,9 @@ class LSTMBot(BasePokerPlayer):
             self.model = Net(i_opp,i_gen)
         self.id = id_
         self.gen_dir = gen_dir
-        if not os.path.exists(self.gen_dir+'/bots/'+str(self.id)):
-            os.makedirs(self.gen_dir+'/bots/'+str(self.id)) 
+        if write_details:
+            if not os.path.exists(self.gen_dir+'/bots/'+str(self.id)):
+                os.makedirs(self.gen_dir+'/bots/'+str(self.id)) 
         self.opponent = None
 
 

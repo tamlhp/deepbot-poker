@@ -1,0 +1,6 @@
+#!/bin/bash
+
+for i in {1..8}
+do
+nohup rq worker -c settings_ec2 > $i&
+done

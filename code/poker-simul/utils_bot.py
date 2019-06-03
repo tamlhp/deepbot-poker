@@ -5,6 +5,14 @@ Created on Tue May 28 02:16:59 2019
 
 @author: cyril
 """
+import os
+os.environ["OMP_NUM_THREADS"] = "1" # export OMP_NUM_THREADS=4
+os.environ["OPENBLAS_NUM_THREADS"] = "1" # export OPENBLAS_NUM_THREADS=4 
+os.environ["MKL_NUM_THREADS"] = "1" # export MKL_NUM_THREADS=6
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1" # export VECLIB_MAXIMUM_THREADS=4
+os.environ["NUMEXPR_NUM_THREADS"] = "1" # export NUMEXPR_NUM_THREADS=6
+
+
 import itertools
 from pypokerengine.utils.card_utils import gen_cards
 import numpy.ctypeslib as ctl
@@ -172,4 +180,4 @@ def decision_algo(net_output, valid_actions, BB, i_stack, pot, verbose=False):
         
     return action, amount
 
-
+        

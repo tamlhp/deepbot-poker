@@ -5,8 +5,13 @@ Created on Wed May 15 13:15:22 2019
 
 @author: cyril
 """
-
 import os
+os.environ["OMP_NUM_THREADS"] = "1" # export OMP_NUM_THREADS=4
+os.environ["OPENBLAS_NUM_THREADS"] = "1" # export OPENBLAS_NUM_THREADS=4 
+os.environ["MKL_NUM_THREADS"] = "1" # export MKL_NUM_THREADS=6
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1" # export VECLIB_MAXIMUM_THREADS=4
+os.environ["NUMEXPR_NUM_THREADS"] = "1" # export NUMEXPR_NUM_THREADS=6
+
 import sys
 sys.path.append('../PyPokerEngine_fork')
 from pypokerengine.api.game import setup_config, start_poker
@@ -20,13 +25,16 @@ from bot_EquityBot import EquityBot
 import random
 import pickle
 import numpy as np
+import time
+from multiprocessing import Pool
+
   
     
-def run_one_game(simul_id , gen_id, lstm_bot, log_dir = './simul_data', nb_hands = 500, ini_stack = 20000, sb_amount = 50, opponents = 'default', verbose=False):
-    gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
-    with open(gen_dir+'/cst_cheat_ids.pkl', 'rb') as f:  
-        cst_cheat_ids = pickle.load(f)
-        
+def run_one_game(simul_id , gen_id, lstm_bot, log_dir = './simul_data', nb_hands = 500, ini_stack = 20000, sb_amount = 50, opponents = 'default', verbose=False, cst_cheat_ids=None):
+    #gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
+    #with open(gen_dir+'/cst_cheat_ids.pkl', 'rb') as f:  
+    #    cst_cheat_ids = pickle.load(f)
+ 
     if opponents == 'default':
         opp_algos = [ConservativeBot(), CallBot(), ManiacBot(), CandidBot()]    
         opp_names = ['conservative_bot','call_bot', 'maniac_bot', 'candid_bot']
@@ -65,6 +73,39 @@ def run_one_game(simul_id , gen_id, lstm_bot, log_dir = './simul_data', nb_hands
     
     return earnings
 
+
+
+##multiproc style
+def run_all_mp():
+    time_1 = time.time()
+    pool = Pool(processes=8)              # start 4 worker processes
+    
+    log_dir = './simul_data'
+    simul_id = 0 ## simul id
+    gen_id = 0 ## gen id
+    gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
+    nb_bots = 8
+    nb_hands = 100
+    sb_amount = 50
+    ini_stack = 20000
+    
+    ## prepare first gen lstm bots and hands 
+    #gen_rand_bots(simul_id = 0,gen_id=0, log_dir=log_dir)
+    #gen_decks(simul_id=0,gen_id=0, log_dir=log_dir)
+    ## play matches
+    with open(gen_dir+'/cst_cheat_ids.pkl', 'rb') as f:  
+        cst_cheat_ids = pickle.load(f)
+    for bot_id in range(1,nb_bots+1):
+        with open(gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'.pkl', 'rb') as f:  
+            lstm_bot = pickle.load(f)
+        res = pool.map(run_one_game,(), dict(simul_id = 0, gen_id = 0, lstm_bot=lstm_bot, log_dir = log_dir, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_cheat_ids = cst_cheat_ids))
+    pool.close()
+    pool.join()
+    time_2 = time.time()
+    print(res)
+    print(time_2-time_1)
+    return 1
+ 
 
 def gen_decks(simul_id, gen_id, log_dir = './simul_data', nb_hands = 500):
     #create dir for generation
@@ -133,3 +174,4 @@ def selection_gen_bots(log_dir, simul_id, gen_id, BB, nb_bots):
     
     print(surv_bot_ids)
     print(prime_bot_ids)
+    

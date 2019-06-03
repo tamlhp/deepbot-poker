@@ -5,6 +5,9 @@ Created on Wed May 15 16:01:21 2019
 
 @author: cyril
 """
+
+import mkl
+mkl.set_num_threads(1)
 import torch
 import pandas as pd
 

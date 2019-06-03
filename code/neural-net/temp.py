@@ -6,6 +6,9 @@ Created on Mon May 13 15:33:55 2019
 @author: cyril
 """
 
+import mkl
+mkl.set_num_threads(1)
+
 import torch
 import torch.nn as nn
 torch.manual_seed(1)

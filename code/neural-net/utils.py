@@ -6,6 +6,7 @@ Created on Thu May 23 15:00:15 2019
 @author: cyril
 """
 
+
 from functools import reduce
 import torch.nn as nn
 import torch
