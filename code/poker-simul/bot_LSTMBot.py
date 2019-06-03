@@ -14,8 +14,8 @@ from torch import nn
 import os
 #from functools import reduce
 #from utils import comp_tot_params, get_flat_params, get_dict_sizes, get_full_dict
-from utils_io import get_sep_dicts
-from utils_bot import get_tot_pot, comp_hand_equity, decision_algo
+from utils_io import get_sep_dicts, get_full_dict
+from utils_bot import get_tot_pot, comp_hand_equity, decision_algo, comp_is_BB, comp_n_act_players
 
 my_verbose_upper = False
 write_details = False
@@ -64,22 +64,26 @@ class Net(nn.Module):
 
 
 class LSTMBot(BasePokerPlayer):  
-    def __init__(self, id_, gen_dir, full_dict = None):
+    def __init__(self, id_=1, gen_dir='./simul_data/simul_0/gen_0', full_dict = None):
     
         if full_dict == None:
             i_opp = self.init_i_opp()
             i_gen = self.init_i_gen()
             self.model = Net(i_opp,i_gen)
             self.state_dict = next(self.model.modules()).state_dict()   #weights are automaticaly generated
+            full_dict_ = self.state_dict.copy()
+            full_dict_.update(i_opp), full_dict_.update(i_gen)    
+            self.full_dict = full_dict_
         else:
+            self.full_dict= full_dict
             self.state_dict, i_opp, i_gen = get_sep_dicts(full_dict)
             self.model = Net(i_opp,i_gen)
         self.id = id_
         self.gen_dir = gen_dir
-        if write_details:
-            if not os.path.exists(self.gen_dir+'/bots/'+str(self.id)):
-                os.makedirs(self.gen_dir+'/bots/'+str(self.id)) 
+        if not os.path.exists(self.gen_dir+'/bots/'+str(self.id)):
+            os.makedirs(self.gen_dir+'/bots/'+str(self.id)) 
         self.opponent = None
+
 
 
     #  we define the logic to make an action through this method. (so this method would be the core of your AI)
@@ -88,10 +92,9 @@ class LSTMBot(BasePokerPlayer):
         self.new_round_handle(round_state)
         input_tensor = self.prep_input(hole_card, round_state, valid_actions)
         net_output = self.net_predict(input_tensor)
-        action, amount = decision_algo(net_output=net_output,valid_actions=valid_actions,
-                                       BB=2*round_state['small_blind_amount'],i_stack = self.i_stack, 
-                                       pot = round_state['pot'], verbose=my_verbose_upper)
-        
+        is_BB= comp_is_BB(round_state, self)
+        action, amount = decision_algo(net_output=net_output, round_state=round_state, valid_actions = valid_actions,
+                                       i_stack = self.i_stack, is_BB=is_BB, verbose = my_verbose_upper)
 
         if write_details:
             write_declare_action_state(action_id = self.action_id, round_id = self.round_id, valid_actions = valid_actions,
@@ -148,7 +151,7 @@ class LSTMBot(BasePokerPlayer):
         return
     
     def prep_input(self, hole_card, round_state, valid_actions):
-        n_act_players = sum([player['state']=='participating' for player in round_state['seats']])
+        n_act_players = comp_n_act_players(round_state)
         
         inputs = [0,]*8
         #setting street one-hot encoding
@@ -178,6 +181,7 @@ class LSTMBot(BasePokerPlayer):
         inputs[7] = call_price/(call_price+tot_pot)
 
         return torch.Tensor(inputs).view(1, 1, -1)
+ 
     
     def clear_log(self):
         for logtype in ['declare_action_state','round_start_state','round_result_state']:

@@ -55,9 +55,11 @@ def fold_in_limits(valid_actions, verbose = False):
     return action, 0
 
 
+    
 
 def is_strong_flush_draw(hole_card, round_state, my_verbose=False):
-    color_list = [card.suit for card in hole_card + gen_cards(round_state['community_card'])]
+    color_list = [card.suit for card in hole_card+gen_cards(round_state['community_card'])]
+    #color_list = []
     color_match = [0,]*4
     flush_color = None
     for a, b in itertools.combinations(color_list, 2):
@@ -74,9 +76,9 @@ def is_strong_flush_draw(hole_card, round_state, my_verbose=False):
     and ((hole_card[0].suit == hole_card[1].suit and hole_card[0].suit == flush_color)
     #hole card in flush draw is A or K
     or any([hole_card[j].rank in ['A','K'] for j in range(2)]))):
-        if my_verbose:
+        if True:
             print('Strong flush draw')
-            print_cards(round_state)
+            print_cards(hole_card = hole_card, round_state=round_state)
         return True
     else:
         return False
@@ -101,9 +103,9 @@ def is_strong_straight_draw(hole_card, round_state, my_verbose = False):
     if sum([x==2 for x in nb_neighbors.values()])>=2:
         cards_with_two_neighbors = [d for d, s in zip(nb_neighbors.keys(), [x==2 for x in nb_neighbors.values()]) if s]
         if(abs(cards_with_two_neighbors[0]-cards_with_two_neighbors[1])==1):
-            if(my_verbose):
+            if(True):
                 print('Strong straight draw')
-                print_cards(round_state)
+                print_cards(hole_card = hole_card, round_state=round_state)
             return True
     return False
 
@@ -153,18 +155,19 @@ def comp_hand_equity(hole_card, community_card, n_act_players, nb_board_river = 
     return hand_equity
 
 
-def decision_algo(net_output, valid_actions, BB, i_stack, pot, verbose=False):
+def decision_algo(net_output, round_state, valid_actions, i_stack, is_BB, verbose=False):
+    pot = round_state['pot']
     y = net_output*i_stack
     tot_pot = get_tot_pot(pot=pot)
     call_price = [action['amount'] for action in valid_actions if action['action']=='call'][0]
     min_raise = [action['amount']['min'] for action in valid_actions if action['action']=='raise'][0]
-    max_raise = [action['amount']['max'] for action in valid_actions if action['action']=='raise'][0]
     if min_raise == -1:
         min_raise = math.inf
+    #print(y)
     if y<call_price:
-        if call_price==0:
+        if call_price==0 or (round_state['street']=='preflop' and call_price ==2*round_state['small_blind_amount'] and is_BB):#not adding chips
             action='call'
-            amount = 0
+            amount = call_price
         else:
             action='fold'
             amount = 0
@@ -173,11 +176,22 @@ def decision_algo(net_output, valid_actions, BB, i_stack, pot, verbose=False):
         amount= call_price
     else:
         #action = 'raise'
-        action, amount = raise_in_limits(call_price+ 0.5*tot_pot*round((y-call_price)/0.5*tot_pot), valid_actions, verbose)
+        action, amount = raise_in_limits(call_price+ 0.5*tot_pot*round((y-call_price)/(0.5*tot_pot)), valid_actions, verbose)
+    """
     # if wanting to raise by more than 2x tot_pot: go all in
+    max_raise = [action['amount']['max'] for action in valid_actions if action['action']=='raise'][0]
     if amount >= call_price + 2.5*tot_pot:
-        amount = max_raise
-        
+        print(y)
+        print(amount)
+        action, amount = raise_in_limits(max_raise, valid_actions,verbose)
+    """
     return action, amount
 
         
+def comp_is_BB(round_state,self):
+    is_BB = len([action for action in round_state['action_histories']['preflop'] if action['uuid']==self.uuid and action['action'] == 'BIGBLIND'])>0
+    return is_BB
+
+def comp_n_act_players(round_state):
+    n_act_players = sum([player['state'] in ['allin','participating'] for player in round_state['seats']])
+    return n_act_players

@@ -70,7 +70,10 @@ class PStratBot(BasePokerPlayer):
         """
 
         self.hole_card = gen_cards(hole_card)
-        self.pos_group = self.define_position(round_state, round_state['next_player'])
+        if self.hole_card[0].rank<self.hole_card[1].rank:
+            self.hole_card = [self.hole_card[1],self.hole_card[0]]
+
+        self.pos_group = self.define_position(round_state = round_state, player_id = round_state['next_player'])
         self.big_blind_amount = round_state['small_blind_amount']*2
 
         self.street_was_raised = was_raised(round_state)
@@ -86,7 +89,12 @@ class PStratBot(BasePokerPlayer):
         if my_verbose_upper:
             print('Chosen strat: '+ str(strat))
         action, amount = self.define_action(strat, round_state, valid_actions)
-
+                
+        if round_state['street'] == 'preflop':
+            print(self.pos_group)
+            #print([card.rank for card in self.hole_card])
+            #print(round_state['community_card'])
+            print(action)
         return action, amount   # action returned here is sent to the poker engine
 
     def receive_game_start_message(self, game_info):
@@ -145,14 +153,7 @@ class PStratBot(BasePokerPlayer):
                 three_of_a_kind_score = (1<<18)
                 two_pair_score = (1<<17)
                 pair_score = (1<<16)
-                """
-                #todelete
-                #hand is higher than double pair
-                print('Hand: ' + "{0:b}".format(hand_score))
-                print(hand_score)
-                print('two-pair: ' + "{0:b}".format(two_pair_score))
-                print(two_pair_score)
-                """
+
                 #hand is two-pair or better
                 if(hand_score >= three_of_a_kind_score):
                     strat = 'deep_postflop_raise_raise'
@@ -171,7 +172,7 @@ class PStratBot(BasePokerPlayer):
                     strat = 'deep_postflop_raise_raise'
                 #strong draws on flop or turn
                 elif(round_state['street'] in ['flop','turn']
-                and (is_strong_flush_draw(round_state, my_verbose) or is_strong_straight_draw(round_state, my_verbose))):
+                and (is_strong_flush_draw(hole_card = self.hole_card, round_state=round_state, my_verbose=my_verbose) or is_strong_straight_draw(hole_card = self.hole_card, round_state = round_state, my_verbose=my_verbose))):
                     strat = 'deep_postflop_raise_raise'
                 else:
                     strat = 'fold'
@@ -221,7 +222,7 @@ class PStratBot(BasePokerPlayer):
             elif(self.street_was_raised):
                 raiser_uuid = [action_desc['uuid'] for action_desc in round_state['action_histories'][round_state['street']] if action_desc['action']=='RAISE'][-1]
                 raiser_id = [player['uuid']==raiser_uuid for player in round_state['seats']].index(True)
-                raiser_pos_group = self.define_position(round_state, raiser_id)
+                raiser_pos_group = self.define_position(round_state = round_state, player_id = raiser_id)
                 raiser_BBs = round_state['seats'][raiser_id]['stack']/self.big_blind_amount
                 if raiser_pos_group == 'early':
                     #offsuit cards
@@ -339,10 +340,7 @@ class PStratBot(BasePokerPlayer):
 
 
     def define_position(self, round_state, player_id):
-        if player_id=='Hero':
-            rel_pos = (round_state['next_player']-round_state['small_blind_pos'])%self.num_players
-        else:
-            rel_pos = (player_id-round_state['small_blind_pos'])%self.num_players
+        rel_pos = (player_id-round_state['small_blind_pos'])%self.num_players
         if (rel_pos<=1):
             pos_group = 'blinds'
         elif (rel_pos>=self.num_players-2):
