@@ -12,10 +12,9 @@ from pypokerengine.players import BasePokerPlayer
 import torch
 from torch import nn
 import os
-#from functools import reduce
-#from utils import comp_tot_params, get_flat_params, get_dict_sizes, get_full_dict
-from utils_io import get_sep_dicts, get_full_dict
 from utils_bot import get_tot_pot, comp_hand_equity, decision_algo, comp_is_BB, comp_n_act_players
+import re
+from collections import OrderedDict
 
 my_verbose_upper = False
 write_details = False
@@ -80,8 +79,8 @@ class LSTMBot(BasePokerPlayer):
             self.model = Net(i_opp,i_gen)
         self.id = id_
         self.gen_dir = gen_dir
-        if not os.path.exists(self.gen_dir+'/bots/'+str(self.id)):
-            os.makedirs(self.gen_dir+'/bots/'+str(self.id)) 
+        #if not os.path.exists(self.gen_dir+'/bots/'+str(self.id)):
+        #    os.makedirs(self.gen_dir+'/bots/'+str(self.id)) 
         self.opponent = None
 
 
@@ -100,15 +99,14 @@ class LSTMBot(BasePokerPlayer):
             write_declare_action_state(action_id = self.action_id, round_id = self.round_id, valid_actions = valid_actions,
                                hole_card = hole_card, round_state = round_state, strat=None, action=action, amount = amount,
                                csv_file = self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_declare_action_state.csv')
-
-        #write_declare_action_state(action_id, round_id, valid_actions, hole_card, round_state, strat, action, amount, csv_file = './test_declare_action.csv'):
-        self.action_id+=1
+            self.action_id+=1
         return action, amount   # action returned here is sent to the poker engine
 
     def receive_game_start_message(self, game_info):
         self.i_stack = game_info['rule']['initial_stack']
-        self.action_id = find_action_id(csv_file = self.gen_dir+'/bots/'+str(id)+'/'+str(self.opponent)+'_declare_action_state.csv')
-        self.round_id = find_round_id(csv_file = self.gen_dir+'/bots/'+str(id)+'/'+str(self.opponent)+'_round_result_state.csv')
+        if write_details:
+            self.action_id = find_action_id(csv_file = self.gen_dir+'/bots/'+str(id)+'/'+str(self.opponent)+'_declare_action_state.csv')
+            self.round_id = find_round_id(csv_file = self.gen_dir+'/bots/'+str(id)+'/'+str(self.opponent)+'_round_result_state.csv')
         pass
 
     def receive_round_start_message(self, round_count, hole_card, seats):
@@ -126,7 +124,7 @@ class LSTMBot(BasePokerPlayer):
         if write_details:
             write_round_result_state(round_id = self.round_id, winners = winners,
                              hand_info = hand_info, round_state = round_state, csv_file = self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_round_result_state.csv')
-        self.round_id+=1
+            self.round_id+=1
         pass
     
             
@@ -146,7 +144,6 @@ class LSTMBot(BasePokerPlayer):
     
     def new_round_handle(self, round_state):
         if round_state['street'] =='preflop' and len([action['action'] for action in round_state['action_histories']['preflop'] if action['uuid']==self.uuid and not(action['action'] in ['BIGBLIND', 'SMALLBLIND'])]) == 0:
-            #print('new_round')
             self.model.reset_u_gen()
         return
     
@@ -185,12 +182,30 @@ class LSTMBot(BasePokerPlayer):
     
     def clear_log(self):
         for logtype in ['declare_action_state','round_start_state','round_result_state']:
-            if os.path.exists(self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_'+logtype+'.csv'):
+            if self.gen_dir != None and os.path.exists(self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_'+logtype+'.csv'):
                 os.remove(self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_'+logtype+'.csv')
             
     def net_predict(self, input_tensor):
         net_output = self.model(input_tensor)
         return net_output.squeeze().item()
+    
+
+    
+def get_sep_dicts(full_dict):
+    state_dict = OrderedDict()
+    i_opp = {}
+    i_gen = {}
+    for layer in sorted(full_dict.keys()):
+        pattern_opp = re.compile('\w\d$')
+        pattern_gen = re.compile('\w\d_\d$')
+        if pattern_opp.match(layer):
+            i_opp[layer] = full_dict[layer]
+        elif pattern_gen.match(layer): 
+            i_gen[layer] = full_dict[layer]
+        else: 
+            state_dict[layer] = full_dict[layer]
+    return state_dict, i_opp, i_gen
+    
     
 def setup_ai():
     return LSTMBot()

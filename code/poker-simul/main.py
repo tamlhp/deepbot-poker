@@ -24,20 +24,21 @@ from functools import reduce
 import random
 
 nb_cards = 52
-nb_hands = 6
+nb_hands = 10
+
+test_lstm = LSTMBot(None)
 
 cst_decks = reduce(lambda x1,x2: x1+x2, [ [3,3] + random.sample(range(1,nb_cards+1),nb_cards-2) for i in range(nb_hands)]) #  
-
 config = setup_config(max_round=nb_hands, initial_stack=20000, small_blind_amount=1000)
-config.register_player(name="p1", algorithm=PStratBot())
+config.register_player(name="p1", algorithm=test_lstm)
 config.register_player(name="p2", algorithm=CallBot())
 config.register_player(name="p3", algorithm=CallBot())
 config.register_player(name="p4", algorithm=CallBot())
 config.register_player(name="p5", algorithm=CallBot())
 config.register_player(name="p6", algorithm=CallBot())
 game_result = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_decks.copy())
+print(game_result)
 
-#print(game_result)
 
 """
 log_dir = './simul_data'
