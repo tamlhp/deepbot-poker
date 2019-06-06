@@ -24,6 +24,8 @@ import time
 from multiprocessing import Pool
 import os
 from functools import reduce
+from collections import OrderedDict
+from neuroevolution import get_flat_params
     
 def run_one_game(simul_id , gen_id, lstm_bot, log_dir = './simul_data', nb_hands = 500, ini_stack = 20000, sb_amount = 50, opponents = 'default', verbose=False, cst_decks=None):
     #gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
@@ -38,7 +40,7 @@ def run_one_game(simul_id , gen_id, lstm_bot, log_dir = './simul_data', nb_hands
         opp_algos = opponents['opp_algos']
         opp_names = opponents['opp_names']
 
-    earnings = {}
+    earnings = OrderedDict()
     ## for each bot to oppose
     for opp_algo, opp_name in zip(opp_algos, opp_names):
         lstm_bot.opponent = opp_name
@@ -83,7 +85,7 @@ def gen_decks(simul_id, gen_id, log_dir = './simul_data', nb_hands = 500, nb_car
             pickle.dump(cst_decks, f, protocol=2)
     return
         
-def gen_rand_bots(simul_id, gen_id, log_dir = './simul_data', overwrite=False):
+def gen_rand_bots(simul_id, gen_id, log_dir = './simul_data', overwrite=False, nb_bots=50):
     #create dir for generation
     gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
     if not os.path.exists(gen_dir):
@@ -93,9 +95,13 @@ def gen_rand_bots(simul_id, gen_id, log_dir = './simul_data', overwrite=False):
         os.makedirs(gen_dir+'/bots') 
         ### GENERATE ALL BOTS ####
         full_dict = None
-        for bot_id in range(1,51): #there are 50 bots
+        for bot_id in range(1,nb_bots+1): #there are usually 50 bots
             os.makedirs(gen_dir+'/bots/'+str(bot_id)) 
             lstm_bot = LSTMBot(id_= bot_id, full_dict=full_dict, gen_dir = gen_dir)
-            with open(gen_dir+'/bots/'+str(lstm_bot.id)+'/bot_'+str(lstm_bot.id)+'_dict.pkl', 'wb') as f:  
-                pickle.dump(lstm_bot.full_dict, f)
+            with open(gen_dir+'/bots/'+str(lstm_bot.id)+'/bot_'+str(lstm_bot.id)+'_flat.pkl', 'wb') as f:  
+                pickle.dump(get_flat_params(lstm_bot.full_dict), f, protocol=0)
     return
+
+class FakeJob:
+    def __init__(self, j):
+        self.result = j.result

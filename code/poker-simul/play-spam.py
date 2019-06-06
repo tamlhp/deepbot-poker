@@ -20,6 +20,9 @@ from pypokerengine.engine.hand_evaluator import HandEvaluator
 from pypokerengine.players import BasePokerPlayer
 from pypokerengine.utils.card_utils import _pick_unused_card, _fill_community_card, gen_cards
 import time
+import pickle
+from neuroevolution import get_flat_params, get_full_dict
+from bot_LSTMBot import LSTMBot
 #import itertools
 #import glob_file
 #from data_preprocessing import prepare_net_inputs
@@ -28,6 +31,19 @@ import time
 #from deuces.deck import Deck
 #import math
 ### binomial distribution ###
+log_dir = './simul_data'
+next_gen_dir = log_dir+'/simul_'+str(0)+'/gen_'+str(0)
+
+with open(next_gen_dir+'/bots/'+str(2)+'/bot_'+str(2)+'_flat.pkl', 'rb') as f:  
+    lstm_bot_flat = pickle.load(f)    
+    
+#flat = get_flat_params(lstm_bot_dict)
+
+lstm_bot_test = LSTMBot()
+full = get_full_dict(lstm_bot_flat, lstm_bot_test)
+flat_2 =get_flat_params(full)
+
+"""
 from utils_simul import compute_ANE, selection_gen_bots
 
 log_dir = './simul_data'
@@ -59,6 +75,8 @@ os.sched_setaffinity(0, x)
 print(os.sched_getaffinity(0))
 
 print(mp.cpu_count())
+
+"""
 """
 hole_card = gen_cards(['SA','S2'])
 board_card = gen_cards(['C3','H4','H7'])

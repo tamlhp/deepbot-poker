@@ -67,10 +67,10 @@ def prep_gen_dirs(dir_):
         os.makedirs(dir_+'/bots') 
         
         
-def get_all_gen_dicts(dir_, nb_bots = 50):
-    all_dicts = []
+def get_all_gen_flat(dir_, nb_bots = 50):
+    all_gen_flat = []
     for bot_id in range(1,nb_bots+1):
-        with open(dir_+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_dict.pkl', 'rb') as f:  
-            full_dict = pickle.load(f)
-            all_dicts.append(full_dict)
-    return all_dicts
+        with open(dir_+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:  
+            params_flat = pickle.load(f)
+            all_gen_flat.append(params_flat)
+    return all_gen_flat

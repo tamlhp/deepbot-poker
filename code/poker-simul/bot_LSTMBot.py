@@ -15,6 +15,8 @@ import os
 from utils_bot import get_tot_pot, comp_hand_equity, decision_algo, comp_is_BB, comp_n_act_players
 import re
 from collections import OrderedDict
+from torch.nn import functional as F
+import random
 
 my_verbose_upper = False
 write_details = False
@@ -39,6 +41,7 @@ class Net(nn.Module):
 
     def forward(self, x):
         x_opp_out, (self.u_opp['h0'], self.u_opp['c0']) = self.LSTM_opp(x, (self.u_opp['h0'], self.u_opp['c0']))
+        print('x_opp_out: '+str(x_opp_out[0][0][:20]))
         x_opp_out = self.LSTM_opp(x)
         x_gen_all, (self.u_gen['h0_0'], self.u_gen['c0_0']) = self.LSTM_gen[0](x, (self.u_gen['h0_0'], self.u_gen['c0_0']))
         for i in range(1,10):
@@ -47,8 +50,8 @@ class Net(nn.Module):
             x_gen_all = torch.cat((x_gen_all,x_gen),0)
 
         x_gen_out = x_gen_all.view(1,1,-1)
-        x_lin_h = self.lin_dec_1(torch.cat((x_gen_out,x_opp_out[0]),2))
-        x_out = self.lin_dec_2(x_lin_h)
+        x_lin_h = torch.relu(self.lin_dec_1(torch.cat((x_gen_out,x_opp_out[0]),2)))
+        x_out = torch.tanh(self.lin_dec_2(x_lin_h))
         return x_out
     
     def reset_u_opp(self):
@@ -77,6 +80,7 @@ class LSTMBot(BasePokerPlayer):
             self.full_dict= full_dict
             self.state_dict, i_opp, i_gen = get_sep_dicts(full_dict)
             self.model = Net(i_opp,i_gen)
+            self.model.load_state_dict(self.state_dict)
         self.id = id_
         self.gen_dir = gen_dir
         #if not os.path.exists(self.gen_dir+'/bots/'+str(self.id)):
@@ -90,7 +94,11 @@ class LSTMBot(BasePokerPlayer):
         # valid_actions format => [raise_action_info, call_action_info, fold_action_info]
         self.new_round_handle(round_state)
         input_tensor = self.prep_input(hole_card, round_state, valid_actions)
+        print('input tensor: '+str(input_tensor))
         net_output = self.net_predict(input_tensor)
+        print('net output: ' +str(net_output))
+        #if random.random() < 0.002:
+        #    print(net_output)
         is_BB= comp_is_BB(round_state, self)
         action, amount = decision_algo(net_output=net_output, round_state=round_state, valid_actions = valid_actions,
                                        i_stack = self.i_stack, is_BB=is_BB, verbose = my_verbose_upper)
@@ -100,6 +108,7 @@ class LSTMBot(BasePokerPlayer):
                                hole_card = hole_card, round_state = round_state, strat=None, action=action, amount = amount,
                                csv_file = self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_declare_action_state.csv')
             self.action_id+=1
+        print('action: ' +str(action) + ', amount: ' + str(amount))
         return action, amount   # action returned here is sent to the poker engine
 
     def receive_game_start_message(self, game_info):
@@ -130,14 +139,14 @@ class LSTMBot(BasePokerPlayer):
             
     def init_i_opp(self):
         i_opp_keys = ['h0','c0']
-        i_opp = {}
+        i_opp = OrderedDict()
         for key in i_opp_keys:
             i_opp[key]=torch.randn(50).view(1,1,50)
         return i_opp
     
     def init_i_gen(self):
         i_gen_keys = ['h0_'+str(i) for i in range(10)]+['c0_'+str(i) for i in range(10)]
-        i_gen = {}
+        i_gen = OrderedDict()
         for key in i_gen_keys:
             i_gen[key]=torch.randn(10).view(1,1,10)
         return i_gen
@@ -193,8 +202,8 @@ class LSTMBot(BasePokerPlayer):
     
 def get_sep_dicts(full_dict):
     state_dict = OrderedDict()
-    i_opp = {}
-    i_gen = {}
+    i_opp = OrderedDict()
+    i_gen = OrderedDict()
     for layer in sorted(full_dict.keys()):
         pattern_opp = re.compile('\w\d$')
         pattern_gen = re.compile('\w\d_\d$')
