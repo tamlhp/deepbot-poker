@@ -25,14 +25,14 @@ from neuroevolution import get_full_dict
 import random
 
 nb_cards = 52
-nb_hands = 1
+nb_hands = 500
 
 ###CONSTANTS
 nb_bots= 1
 simul_id = 0
 log_dir = './simul_data'
 sb_amount = 50
-ini_stack = 20000
+ini_stack = 2000
 nb_generations = 250
 bot_id = 1
 gen_dir='./simul_data/simul_0/gen_0'
@@ -42,24 +42,30 @@ lstm_ref = LSTMBot(None)
 print('## Starting ##')
 ## prepare first gen lstm bots and decks
 #gen_rand_bots(simul_id = simul_id, gen_id=0, log_dir=log_dir, nb_bots = nb_bots)
-#gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = 500)
-#load bot
-with open(gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:  
+gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = 500)
+
+backed_gen_dir = '../../../backed_simuls/simul_5/gen_15'
+
+#backed_gen_dir= './simul_data/simul_5/gen_1'
+with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:  
     lstm_bot_flat = pickle.load(f)
     lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
-    print('lstm bot dict: ' + str(lstm_bot_dict['h0_0'][0][0][:5]))
     lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict)
 
 #load decks
 with open(gen_dir+'/cst_decks.pkl', 'rb') as f:  
     cst_decks = pickle.load(f)
-print('deck: ' +str(cst_decks[:5])) 
-config = setup_config(max_round=nb_hands, initial_stack=20000, small_blind_amount=50)
-config.register_player(name="p1", algorithm=lstm_bot)
-config.register_player(name="p2", algorithm=ManiacBot())
-game_result = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_decks.copy())
-#print(game_result)
-
+    
+cst_decks_match = cst_decks.copy()
+sum_won=0
+for i in range(20):
+    config = setup_config(max_round=nb_hands, initial_stack=ini_stack, small_blind_amount=50)
+    config.register_player(name="p1", algorithm=ManiacBot())
+    config.register_player(name="p2", algorithm=CandidBot())
+    game_result = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_decks_match)
+    #print(game_result)
+    sum_won+=game_result['players'][0]['stack']
+print(sum_won-20*ini_stack)
 
 """
 log_dir = './simul_data'

@@ -12,7 +12,7 @@ from pypokerengine.players import BasePokerPlayer
 import torch
 from torch import nn
 import os
-from utils_bot import get_tot_pot, comp_hand_equity, decision_algo, comp_is_BB, comp_n_act_players
+from utils_bot import get_tot_pot, comp_hand_equity, decision_algo, comp_is_BB, comp_n_act_players, print_cards, print_state
 import re
 from collections import OrderedDict
 from torch.nn import functional as F
@@ -41,7 +41,7 @@ class Net(nn.Module):
 
     def forward(self, x):
         x_opp_out, (self.u_opp['h0'], self.u_opp['c0']) = self.LSTM_opp(x, (self.u_opp['h0'], self.u_opp['c0']))
-        print('x_opp_out: '+str(x_opp_out[0][0][:20]))
+        #print('x_opp_out: '+str(x_opp_out[0][0][:20]))
         x_opp_out = self.LSTM_opp(x)
         x_gen_all, (self.u_gen['h0_0'], self.u_gen['c0_0']) = self.LSTM_gen[0](x, (self.u_gen['h0_0'], self.u_gen['c0_0']))
         for i in range(1,10):
@@ -50,7 +50,7 @@ class Net(nn.Module):
             x_gen_all = torch.cat((x_gen_all,x_gen),0)
 
         x_gen_out = x_gen_all.view(1,1,-1)
-        x_lin_h = torch.relu(self.lin_dec_1(torch.cat((x_gen_out,x_opp_out[0]),2)))
+        x_lin_h = torch.tanh(self.lin_dec_1(torch.cat((x_gen_out,x_opp_out[0]),2)))
         x_out = torch.tanh(self.lin_dec_2(x_lin_h))
         return x_out
     
@@ -66,26 +66,31 @@ class Net(nn.Module):
 
 
 class LSTMBot(BasePokerPlayer):  
-    def __init__(self, id_=1, gen_dir='./simul_data/simul_0/gen_0', full_dict = None):
+    def __init__(self, id_=1, gen_dir='./simul_data/simul_0/gen_0', full_dict = None, game='HU'):
     
-        if full_dict == None:
-            i_opp = self.init_i_opp()
-            i_gen = self.init_i_gen()
-            self.model = Net(i_opp,i_gen)
-            self.state_dict = next(self.model.modules()).state_dict()   #weights are automaticaly generated
-            full_dict_ = self.state_dict.copy()
-            full_dict_.update(i_opp), full_dict_.update(i_gen)    
-            self.full_dict = full_dict_
-        else:
-            self.full_dict= full_dict
-            self.state_dict, i_opp, i_gen = get_sep_dicts(full_dict)
-            self.model = Net(i_opp,i_gen)
-            self.model.load_state_dict(self.state_dict)
-        self.id = id_
-        self.gen_dir = gen_dir
-        #if not os.path.exists(self.gen_dir+'/bots/'+str(self.id)):
-        #    os.makedirs(self.gen_dir+'/bots/'+str(self.id)) 
-        self.opponent = None
+        self.game=game
+        if game =='HU':
+            if full_dict == None:
+                i_opp = self.init_i_opp()
+                i_gen = self.init_i_gen()
+                self.model = Net(i_opp,i_gen)
+                self.state_dict = next(self.model.modules()).state_dict()   #weights are automaticaly generated
+                full_dict_ = self.state_dict.copy()
+                full_dict_.update(i_opp), full_dict_.update(i_gen)    
+                self.full_dict = full_dict_
+            else:
+                self.full_dict= full_dict
+                self.state_dict, i_opp, i_gen = get_sep_dicts(full_dict)
+                self.model = Net(i_opp,i_gen)
+                self.model.load_state_dict(self.state_dict)
+            self.id = id_
+            self.gen_dir = gen_dir
+            #if not os.path.exists(self.gen_dir+'/bots/'+str(self.id)):
+            #    os.makedirs(self.gen_dir+'/bots/'+str(self.id)) 
+            self.opponent = None
+            
+        elif game =='6max':
+            pass
 
 
 
@@ -94,21 +99,22 @@ class LSTMBot(BasePokerPlayer):
         # valid_actions format => [raise_action_info, call_action_info, fold_action_info]
         self.new_round_handle(round_state)
         input_tensor = self.prep_input(hole_card, round_state, valid_actions)
-        print('input tensor: '+str(input_tensor))
+        #print('input tensor: '+str(input_tensor))
         net_output = self.net_predict(input_tensor)
-        print('net output: ' +str(net_output))
-        #if random.random() < 0.002:
-        #    print(net_output)
-        is_BB= comp_is_BB(round_state, self)
+        #print('net output: ' +str(net_output))
+            
         action, amount = decision_algo(net_output=net_output, round_state=round_state, valid_actions = valid_actions,
-                                       i_stack = self.i_stack, is_BB=is_BB, verbose = my_verbose_upper)
+                                       i_stack = self.i_stack, my_uuid = self.uuid, verbose = my_verbose_upper)
 
         if write_details:
             write_declare_action_state(action_id = self.action_id, round_id = self.round_id, valid_actions = valid_actions,
                                hole_card = hole_card, round_state = round_state, strat=None, action=action, amount = amount,
                                csv_file = self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_declare_action_state.csv')
             self.action_id+=1
-        print('action: ' +str(action) + ', amount: ' + str(amount))
+        if random.random() < 1:
+            print_cards(hole_card = hole_card, round_state=round_state)
+            print_state(net_output=net_output, action=action, amount=amount)
+        
         return action, amount   # action returned here is sent to the poker engine
 
     def receive_game_start_message(self, game_info):
@@ -177,6 +183,7 @@ class LSTMBot(BasePokerPlayer):
                 street_invest = street_invest_arr[-1]
                 my_invest +=  street_invest
         inputs[5] = my_invest /self.i_stack
+
         
         #setting investment of all opponents
         tot_pot = get_tot_pot(round_state['pot'])

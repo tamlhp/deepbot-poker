@@ -91,10 +91,11 @@ class PStratBot(BasePokerPlayer):
         action, amount = self.define_action(strat, round_state, valid_actions)
                 
         if round_state['street'] == 'preflop':
-            print(self.pos_group)
+            pass
+            #print(self.pos_group)
             #print([card.rank for card in self.hole_card])
             #print(round_state['community_card'])
-            print(action)
+            #print(action)
         return action, amount   # action returned here is sent to the poker engine
 
     def receive_game_start_message(self, game_info):
@@ -293,40 +294,40 @@ class PStratBot(BasePokerPlayer):
             if not(self.street_was_raised):
                 #call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
                 amount = int((3+self.number_called(round_state))*self.big_blind_amount)
-                action, amount = raise_in_limits(amount, valid_actions, my_verbose_upper)
+                action, amount = raise_in_limits(amount=amount, valid_actions=valid_actions, verbose=my_verbose_upper)
             else:
                 amount = int(3*[action_desc['amount'] for action_desc in round_state['action_histories'][round_state['street']] if action_desc['action']=='RAISE'][-1])
-                action, amount = raise_in_limits(amount, valid_actions, my_verbose_upper)
+                action, amount = raise_in_limits(amount=amount, valid_actions=valid_actions, verbose=my_verbose_upper)
 
         elif strat == 'deep_preflop_raise_fold':
             if not(self.street_was_raised):
                 #call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
                 amount = int((3+self.number_called(round_state))*self.big_blind_amount)
-                action, amount = raise_in_limits(amount, valid_actions, my_verbose_upper)
+                action, amount = raise_in_limits(amount=amount, valid_actions=valid_actions, verbose=my_verbose_upper)
             else:
-                action, amount = fold_in_limits(valid_actions, my_verbose)
+                action, amount = fold_in_limits(valid_actions=valid_actions, round_state = round_state, my_uuid = self.uuid, verbose= my_verbose)
 
         elif strat == 'deep_postflop_raise_raise':
             if not(self.street_was_raised):
                 #call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
                 amount = int((2/3)*round_state['pot']['main']['amount'])
-                action, amount = raise_in_limits(amount, valid_actions, my_verbose_upper)
+                action, amount = raise_in_limits(amount=amount, valid_actions=valid_actions, verbose=my_verbose_upper)
             else:
                 nb_raise_before = sum([action_desc['action']=='RAISE' for action_desc in round_state['action_histories'][round_state['street']]])
                 if nb_raise_before==1:
                     last_raise = [action_desc for action_desc in round_state['action_histories'][round_state['street']] if action_desc['action']=='RAISE'][-1]['amount']
                     amount = int(3*last_raise + round_state['pot']['main']['amount'])
-                    action, amount = raise_in_limits(amount, valid_actions, my_verbose_upper)
+                    action, amount = raise_in_limits(amount=amount, valid_actions=valid_actions, verbose=my_verbose_upper)
                 else:
-                    action, amount = raise_in_limits(math.inf, valid_actions, my_verbose_upper)
+                    action, amount = raise_in_limits(amount=math.inf, valid_actions=valid_actions, verbose=my_verbose_upper)
 
         elif strat == 'short_shove':
             action = 'raise'
-            action, amount = raise_in_limits(math.inf, valid_actions, my_verbose_upper)
+            action, amount = raise_in_limits(amount=math.inf, valid_actions=valid_actions, verbose=my_verbose_upper)
 
 
         elif strat == 'fold':
-            action, amount = fold_in_limits(valid_actions, my_verbose)
+            action, amount = fold_in_limits(valid_actions=valid_actions, round_state = round_state, my_uuid=self.uuid, verbose=my_verbose)
 
         if action == None or amount == None:
             action = 'fold'

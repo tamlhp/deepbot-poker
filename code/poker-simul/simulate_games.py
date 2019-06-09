@@ -6,7 +6,7 @@ Created on Tue May 28 12:12:27 2019
 @author: cyril
 """
 
-from utils_simul import gen_rand_bots, gen_decks, run_one_game, FakeJob
+from utils_simul import gen_rand_bots, gen_decks, run_one_game, FakeJob, run_one_game_alt
 from neuroevolution import select_next_gen_bots, get_best_ANE_earnings, get_full_dict
 import pickle
 import time
@@ -20,6 +20,8 @@ from utils_io import prep_gen_dirs, get_all_gen_flat
 import random
 import sys
 import numpy as np
+from operator import add
+
 
             #######
 
@@ -39,26 +41,27 @@ if __name__ == '__main__':
     lstm_ref = LSTMBot()
     #log dir path
     log_dir = './simul_data'
-    simul_id = 0 ## simul id
+    simul_id = 6 ## simul id
     
 
     
     ###CONSTANTS
-    nb_bots= 1
-    nb_hands = 50
+    nb_bots= 60
+    nb_hands = 500
     sb_amount = 50
     ini_stack = 20000
     nb_generations = 250
+    nb_sub_matches=10
     
     print('## Starting ##')
     ## prepare first gen lstm bots
-    gen_rand_bots(simul_id = simul_id, gen_id=0, log_dir=log_dir, nb_bots = nb_bots)
+    gen_rand_bots(simul_id = simul_id, gen_id=0, log_dir=log_dir, nb_bots = nb_bots, overwrite=False)
           
     for gen_id in range(0, nb_generations):
         print('\n Starting generation: ' + str(gen_id))
         jobs = []
         #prepare generation deck
-        gen_decks(simul_id=simul_id,gen_id=gen_id, log_dir=log_dir)
+        gen_decks(simul_id=simul_id,gen_id=gen_id, log_dir=log_dir, overwrite=False)
         #generation's directory
         gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
         time_1 = time.time()
@@ -71,7 +74,8 @@ if __name__ == '__main__':
                 lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
                 lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict)
             try:
-                jobs.append(q.enqueue(run_one_game, kwargs = dict(simul_id = 0, gen_id = 0, lstm_bot=lstm_bot, log_dir = log_dir, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)))
+                jobs.append(q.enqueue(run_one_game_alt, kwargs = dict(simul_id = 0, gen_id = 0, lstm_bot=lstm_bot, log_dir = log_dir, 
+                            ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks, nb_sub_matches =nb_sub_matches)))
             except ConnectionError:
                 print('Currently not connected to redis server')
                 continue
@@ -96,7 +100,8 @@ if __name__ == '__main__':
                     if jobs[i].result is None:
                         try:
                             jobs[i].cancel()
-                            jobs[i] = q.enqueue(run_one_game, kwargs = dict(simul_id = 0, gen_id = 0, lstm_bot=lstm_bot, log_dir = log_dir, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks))
+                            jobs[i] = q.enqueue(run_one_game_alt, kwargs = dict(simul_id = 0, gen_id = 0, lstm_bot=lstm_bot, log_dir = log_dir, 
+                                            ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks, nb_sub_matches =nb_sub_matches))
                         except ConnectionError:
                             print('Currently not connected to redis server')
                             continue
@@ -106,13 +111,23 @@ if __name__ == '__main__':
         
         time_2 = time.time()
         print('Done with MATCHES of generation number :'+str(gen_id)+', it took '+str(time_2-time_1) +' seconds.')
-        best_earnings = get_best_ANE_earnings(all_earnings = all_earnings, BB=2*sb_amount, nb_bots = nb_bots, ini_stack = ini_stack)
-        print('The best agent has the following scores: ' + str(best_earnings))
-        
+        ##saving all earnings
         for i, earnings in enumerate(all_earnings):    
             with open(gen_dir+'/bots/'+str(i+1)+'/earnings.pkl', 'wb') as f:  
                 pickle.dump(earnings, f)
-                
+        
+        ## getting best earnings
+        best_earnings = get_best_ANE_earnings(all_earnings = all_earnings, BB=2*sb_amount, nb_bots = nb_bots, ini_stack = ini_stack)
+        print('The best agent has the following scores: ' + str(best_earnings))
+        #getting average earning of lstm agents
+        avg_earnings=[0,]*len(all_earnings[0].values())
+        for i in range(nb_bots):
+            avg_earnings= list(map(add, avg_earnings, all_earnings[i].values()))
+            
+        avg_earnings= [el/nb_bots for el in avg_earnings]
+        print('The agents won on average: ' +str(avg_earnings))
+        with open(gen_dir+'/surv_earnings.pkl', 'wb') as f:  
+                pickle.dump(avg_earnings, f)
 
         ## NEXT GENERATION PREP BOTS
         all_gen_flat = get_all_gen_flat(dir_=gen_dir, nb_bots = nb_bots) # iteration bot infos
@@ -121,12 +136,10 @@ if __name__ == '__main__':
         prep_gen_dirs(dir_=next_gen_dir)
 
         time_3 = time.time()
-        next_gen_bots_flat, surv_earnings = select_next_gen_bots(log_dir=log_dir, simul_id=simul_id, gen_id=gen_id, all_earnings=all_earnings, BB=2*sb_amount, 
+        next_gen_bots_flat = select_next_gen_bots(log_dir=log_dir, simul_id=simul_id, gen_id=gen_id, all_earnings=all_earnings, BB=2*sb_amount, 
                                                                  nb_bots=nb_bots, all_gen_flat = all_gen_flat, nb_gens = nb_generations, ini_stack = ini_stack)
-       
-        print('The survivors won on average: ' +str(surv_earnings))
-        with open(gen_dir+'/surv_earnings.pkl', 'wb') as f:  
-                pickle.dump(surv_earnings, f)
+
+                
         """
         gen_bots_job = q.enqueue(select_next_gen_bots, kwargs = dict(log_dir=log_dir, simul_id=simul_id, gen_id=gen_id, all_earnings=all_earnings, BB=2*sb_amount, nb_bots=nb_bots, all_gen_dicts = all_gen_dicts))
         while True:

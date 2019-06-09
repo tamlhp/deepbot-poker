@@ -17,9 +17,10 @@ class CandidBot(BasePokerPlayer):
         n_act_players = comp_n_act_players(round_state)
         equity = comp_hand_equity(hole_card = hole_card, community_card = round_state['community_card'], n_act_players = n_act_players)
         o = equity**7
-        is_BB= comp_is_BB(round_state, self)
+        if o>(2/3):
+            print('yay')
         action, amount = decision_algo(net_output=o, round_state=round_state, valid_actions = valid_actions,
-                                       i_stack = self.i_stack, is_BB=is_BB, verbose = my_verbose)
+                                       i_stack = self.i_stack, my_uuid = self.uuid, verbose = my_verbose)
         return action, amount   # action returned here is sent to the poker engine
 
     def receive_game_start_message(self, game_info):

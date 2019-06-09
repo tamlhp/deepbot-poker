@@ -23,55 +23,149 @@ def select_next_gen_bots(log_dir, simul_id, gen_id, all_earnings, BB, nb_bots, a
     mkl.set_num_threads(64)
     #old_gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
     #creating new generation directory
-
-    if method =='GA':
-        ANEs = compute_ANE(all_earnings, BB, nb_bots, ini_stack = ini_stack)
-        ord_bot_ids = [el+1 for el in sorted(range(len(ANEs)), key=lambda i:ANEs[i], reverse=True)]
-        
-        #for reference of layer sizes
-        lstm_bot_temp = LSTMBot()
+    lstm_ref = LSTMBot(None)
     
-        #separating surviving bots
+    if method =='GA':
+        ANEs = compute_ANE(all_earnings=all_earnings, BB=BB, nb_bots=nb_bots, ini_stack = ini_stack)
+        ord_bot_ids = [el+1 for el in sorted(range(len(ANEs)), key=lambda i:ANEs[i], reverse=True)]
+
+        #SELECTING SURVIVORS
         surv_perc = 0.3
         surv_bot_ids = ord_bot_ids[:int(surv_perc*nb_bots)]  
-    
         surv_bots_flat = []
         for bot_id in surv_bot_ids:
             surv_bot_flat = all_gen_flat[bot_id-1]
-            surv_bots_flat.append(surv_bot_flat)
-            
-        surv_earnings=[0,]*len(all_earnings[0].values())
-        for bot_id in surv_bot_ids:
-            surv_earnings= list( map(add, surv_earnings, all_earnings[bot_id-1].values()))
-            
-        surv_earnings= [el/len(surv_bot_ids) for el in surv_earnings]
-    
+            surv_bots_flat.append(surv_bot_flat)      
         surv_ANEs = [ANEs[i-1] for i in surv_bot_ids]
-        elite_bot_ids = [id_ for id_ in surv_bot_ids if ANEs[id_-1] > sum(surv_ANEs)/float(len(surv_ANEs))]
-        #print('The best bot performed:' + str(all_earnings[int(surv_bot_ids[0]-1)]))
         
+        ## SELECTING ELITE BOTS
+        elite_bot_ids = [id_ for id_ in surv_bot_ids if (ANEs[id_-1]) > sum(surv_ANEs)/float(len(surv_ANEs))]#[:int(len(surv_bot_ids)/2)]      
+        print('surv ANEs: ' +str(surv_ANEs))
+        print('avg surv ANEs: ' + str(sum(surv_ANEs)/float(len(surv_ANEs))))
+        
+        if len(elite_bot_ids) == 0 or len(elite_bot_ids)==len(surv_bot_ids):
+            elite_bot_ids = [surv_bot_ids[i] for i in range(int(len(surv_bot_ids)))]
+            print('[Warning] There were no elite (all equal), picking all survivors as elite')
+        
+        
+        ## Verify that one opponent is not 'left behind', as in unbeaten by elites
+        elite_earnings = np.array([list(all_earnings[elite_bot_ids[i]-1].values()) for i in range(len(elite_bot_ids))])
+        if any(elite_earnings[0]<=0): #one opponent bot is not being beaten
+            balanced = False
+            for i in range(1, len(elite_earnings)):
+                if all((elite_earnings[0] + elite_earnings[i]) >0):
+                    balanced = True
+                    break
+            if balanced==False:
+                print('Elites are sligthly unbalanced vs opponents, attempting correction')
+                for bot_id in ord_bot_ids[1:]:
+                    if all((elite_earnings[0] + np.array(list(all_earnings[bot_id-1].values()))) >0):
+                        print('Found a strong bot to get balanced elites, it has following earnings: '+str((all_earnings[bot_id-1])))
+                        elite_bot_ids = elite_bot_ids + [bot_id]
+                        balanced = True
+                        break
+            if balanced==False:
+                print('Elites remain slightly unbalanced')
+                if all(np.max(elite_earnings, axis=0)>0):
+                    balanced = True
+                else:
+                    print('Elites are very unbalanced vs opponents, attempting correction')   
+            if balanced==False:
+                lost_opp_ids = elite_earnings[0]<=0
+                for k in range(sum(lost_opp_ids)):
+                    for bot_id in ord_bot_ids[1:]:
+                        if np.array(list(all_earnings[bot_id-1].values()))[lost_opp_ids][k] >0:
+                            print('Found a weak bot to get more balanced elites, it has following earnings: '+str((all_earnings[bot_id-1])))
+                            elite_bot_ids = elite_bot_ids + [bot_id]
+                            break
+            #if balanced==False:
+                #print('Elites remain very unbalanced vs opponents')
+            
+                
+        if len(elite_bot_ids) ==1:  
+            elite_bot_ids = elite_bot_ids + [surv_bot_ids[random.randint(1,len(surv_bot_ids)-1)]]   #if there is only one elite, add other one from survivors
+            print('There was only one elite, adding a random survivor as elite')
+
         ##Preparing elite bots
         elite_bots_flat = []
         for bot_id in elite_bot_ids:
-            old_el_bot_flat = all_gen_flat[bot_id-1]
-            elite_bots_flat.append(old_el_bot_flat)
+            elite_bots_flat.append(all_gen_flat[bot_id-1])
+            
+        ## SELECTING SECOND TIER BOTS
+        sec_tier_bot_ids = [id_ for id_ in surv_bot_ids if id_ not in elite_bot_ids]
+        ##Preparing elite bots
+        sec_tier_bots_flat = []
+        for bot_id in sec_tier_bot_ids:
+            sec_tier_bots_flat.append(all_gen_flat[bot_id-1])
                 
         print('Nb surviving bots: ' +str(len(surv_bot_ids))+ ', nb elite bots: '+str(len(elite_bot_ids)))
     
-
-        repro_bots_flat = reproduce_bots(parent_bots_flat = elite_bots_flat, m_sizes_ref = lstm_bot_temp)
-        next_bot_id = len(elite_bot_ids)+len(repro_bots_flat)
-        mut_rate = 0.25 - 0.2*gen_id/nb_gens  ##important values
-        mut_strength = 0.5 - 0.4*gen_id/nb_gens
-        mutant_bots_flat = mutate_bots(orig_bots_flat = surv_bots_flat, nb_new_bots = nb_bots, ref_bot_id=next_bot_id+1, 
-                                  mut_rate=mut_rate , mut_strength=mut_strength ,m_sizes_ref = lstm_bot_temp)
-        
-        new_gen_bots = elite_bots_flat+repro_bots_flat+mutant_bots_flat
+        nb_new_crossover = nb_bots- len(surv_bot_ids)
+        cross_bots_flat = crossover_bots(parent_bots_flat = elite_bots_flat, m_sizes_ref = lstm_ref, nb_new_bots = nb_new_crossover)
+        print('done cross')
+        nb_new_mutant = nb_bots - len(elite_bot_ids)
+        mut_rate = 0.3 - 0.25*gen_id/nb_gens #0.25 - 0.2*gen_id/nb_gens# ##important values
+        mut_strength =  0.5 - 0.4*gen_id/nb_gens #0.5 - 0.4*gen_id/nb_gens #
+        mutant_bots_flat = mutate_bots(orig_bots_flat = sec_tier_bots_flat+cross_bots_flat, nb_new_bots = nb_new_mutant,
+                                  mut_rate=mut_rate , mut_strength=mut_strength)
+        print('done mutation')
+        new_gen_bots = elite_bots_flat+mutant_bots_flat
         
     elif method=='ASE':
         pass
-    return new_gen_bots, surv_earnings
+    return new_gen_bots
 
+
+def crossover_bots(parent_bots_flat, m_sizes_ref, nb_new_bots):
+    cross_bots = []
+    for i in range(nb_new_bots):
+        #random approach, parents are selected randomly
+        while(True):
+            first_parent_id = random.randint(0,len(parent_bots_flat)-1)
+            second_parent_id = random.randint(0,len(parent_bots_flat)-1)
+            if(first_parent_id != second_parent_id):
+                break
+        first_parent = parent_bots_flat[first_parent_id]
+        second_parent = parent_bots_flat[second_parent_id]
+
+        #deterministic approach, each elite crosses with each other elite
+        """
+        for i in range(len(parent_bots_flat)):
+            for j in range(i+1,len(parent_bots_flat)):
+                first_parent = parent_bots_flat[i]
+                second_parent = parent_bots_flat[j]
+        """
+        
+        #taking even and odd weights
+        #child_flat_params = torch.Tensor([first_parent[k].float() if k%2==0 else second_parent[k].float() for k in range(len(first_parent))])
+        
+        #taking mean weight
+        #child_flat_params = [(first_parent[k] + second_parent[k])/2 for k in range(len(first_parent))]
+        
+        
+        #taking by layer
+        dict_sizes=get_dict_sizes(m_sizes_ref.state_dict,m_sizes_ref.model.i_opp,m_sizes_ref.model.i_gen)
+        i_start=0
+        child_flat_params = []
+        for layer in sorted(dict_sizes.keys()):
+            if random.random()<0.5:
+                child_flat_params= child_flat_params+list(first_parent[i_start:i_start+dict_sizes[layer]['numel']])
+            else:
+                child_flat_params = child_flat_params+list(second_parent[i_start:i_start+dict_sizes[layer]['numel']])
+            i_start+=dict_sizes[layer]['numel']
+        
+            
+        cross_bots.append(torch.Tensor(child_flat_params))
+    return cross_bots#[:30] # truncate to leave some spots for mutants
+
+def mutate_bots(orig_bots_flat, mut_rate, mut_strength, nb_new_bots):
+    mutant_bots=[]
+    for i in range(nb_new_bots):
+        orig_bot = orig_bots_flat[i%len(orig_bots_flat)]
+        mutant_flat_params = torch.Tensor([orig_gene.float() if random.random()>mut_rate else  orig_gene.float() + random.gauss(mu=0, sigma=mut_strength) for orig_gene in orig_bot])
+        mutant_bots.append(mutant_flat_params)
+    return mutant_bots
+    
 
 
 def compute_ANE(all_earnings, BB, nb_bots=50, load = False, gen_dir = None, nb_opps = 4, ini_stack = 20000):
@@ -84,32 +178,18 @@ def compute_ANE(all_earnings, BB, nb_bots=50, load = False, gen_dir = None, nb_o
     earnings_arr = np.array([list(earning.values()) for earning in all_earnings])
     #set all values to positive
     earnings_arr = [list(earning + 2*ini_stack*np.ones(nb_opps)) for earning in earnings_arr]
-    n_j = np.max([BB*np.ones(nb_opps),np.average(earnings_arr,axis=0)], axis=0)
+   # earnings_arr = [list(earning) for earning in earnings_arr]   
+    n_j = np.max([BB*np.ones(nb_opps),np.max(earnings_arr,axis=0)/2], axis=0)
+    
+    #alternative approach
+
+    #use average earnings
+    #n_j = np.max([np.sqrt(BB*np.ones(nb_opps)),np.average(earnings_arr,axis=0)], axis=0)
     
     print('ANEs normalization factors: ' +str(n_j))
     
     return np.sum(earnings_arr/n_j, axis = 1)/nb_opps
 
-def reproduce_bots(parent_bots_flat, m_sizes_ref):
-    repro_bots = []
-    new_bot_id = len(parent_bots_flat)+1
-    for i in range(len(parent_bots_flat)):
-        for j in range(i+1,len(parent_bots_flat)):
-            first_parent = parent_bots_flat[i]
-            second_parent = parent_bots_flat[j]
-            child_flat_params = torch.Tensor([first_parent[k].float() if k%2==0 else second_parent[k].float() for k in range(len(first_parent))])
-            repro_bots.append(child_flat_params)
-            new_bot_id+=1
-    return repro_bots[:25] # truncate to leave some spots for mutants
-
-def mutate_bots(orig_bots_flat, nb_new_bots, ref_bot_id, mut_rate, mut_strength, m_sizes_ref):
-    mutant_bots=[]
-    for i, new_bot_id in enumerate(range(ref_bot_id, nb_new_bots+1)):
-        orig_bot = orig_bots_flat[i%len(orig_bots_flat)]
-        mutant_flat_params = torch.Tensor([orig_gene.float() if random.random()>mut_rate else  orig_gene.float() + random.gauss(mu=0, sigma=mut_strength) for orig_gene in orig_bot])
-        mutant_bots.append(mutant_flat_params)
-    return mutant_bots
-    
 
 def get_flat_params(full_dict):
     params = torch.Tensor(0)
@@ -138,7 +218,7 @@ def get_dict_sizes(state_dict, i_opp, i_gen):
     return dict_sizes
 
 def get_best_ANE_earnings(all_earnings, BB=100, nb_bots = 50, ini_stack=20000):
-    ANEs = compute_ANE(all_earnings, BB, nb_bots, ini_stack = ini_stack)
+    ANEs = compute_ANE(all_earnings=all_earnings, BB=BB, nb_bots=nb_bots, ini_stack = ini_stack)
     best_bot_id = [el for el in sorted(range(len(ANEs)), key=lambda i:ANEs[i], reverse=True)][0]
     return all_earnings[best_bot_id]
     #print('Highest ANE is ' + str(max(ANEs) )

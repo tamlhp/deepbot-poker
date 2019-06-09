@@ -22,7 +22,7 @@ import math
 
 def raise_in_limits(amount, valid_actions, verbose=False):
     #if no raise available, calling
-    if [item for item in valid_actions if item['action'] == 'raise'][0]['amount']['max']==-1:
+    if [item for item in valid_actions if item['action'] == 'raise'][0]['amount']['min']==-1:
         action_in_limits = 'call'
         amount_in_limits = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
     else:
@@ -39,20 +39,26 @@ def raise_in_limits(amount, valid_actions, verbose=False):
             amount_in_limits = amount
     return action_in_limits, amount_in_limits
 
-def fold_in_limits(valid_actions, verbose = False):
+def fold_in_limits(valid_actions, round_state, my_uuid, verbose = False):
     # Check whether it is possible to call
-    can_call = len([item for item in valid_actions if item['action'] == 'call']) > 0
-    if can_call:
+    #call_exists = len([item for item in valid_actions if item['action'] == 'call']) > 0
+    my_last_amount = comp_last_amount(round_state=round_state,my_uuid=my_uuid)
+    #if call_exists:
         # If so, compute the amount that needs to be called
-        call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
+    call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
+    #else:
+    #    call_amount = 0
+    #action = 'call' if call_exists and call_amount == 0 else 'fold'
+    if call_amount == my_last_amount:
+        action='call'
+        amount = call_amount
     else:
-        call_amount = 0
-    action = 'call' if can_call and call_amount == 0 else 'fold'
-
+        action='fold'
+        amount=0
     #if (my_verbose):
     #    if action =='call': print('Calling')
     #    elif action == 'fold': print('Folding')
-    return action, 0
+    return action, amount
 
 
     
@@ -112,11 +118,15 @@ def is_strong_straight_draw(hole_card, round_state, my_verbose = False):
 def was_raised(round_state):
         return any([action_desc['action']=='RAISE' for action_desc in round_state['action_histories'][round_state['street']]])
 
+def was_raised_twice(round_state):
+        return sum([action_desc['action']=='RAISE' for action_desc in round_state['action_histories'][round_state['street']]])>=2
 
 def print_cards(hole_card, round_state):
     print('Hole cards: ' + str(list(map(lambda x: x.__str__(), hole_card)))
         + ', community cards: ' +str(list(map(lambda x: x.__str__(), gen_cards(round_state['community_card'])))))
 
+def print_state(net_output,action,amount):
+    print('net output: %.2f action: %s, amount: %i' % (net_output, action, amount))
 
 
 def get_tot_pot(pot):
@@ -155,28 +165,35 @@ def comp_hand_equity(hole_card, community_card, n_act_players, nb_board_river = 
     return hand_equity
 
 
-def decision_algo(net_output, round_state, valid_actions, i_stack, is_BB, verbose=False):
-    pot = round_state['pot']
-    y = net_output*i_stack
-    tot_pot = get_tot_pot(pot=pot)
-    call_price = [action['amount'] for action in valid_actions if action['action']=='call'][0]
+
+def decision_algo(net_output, round_state, valid_actions, i_stack, my_uuid, verbose=False):    
+    #pot = round_state['pot']
+    BB = 2*round_state['small_blind_amount']
+    #is_BB= comp_is_BB(round_state, my_uuid)
+    my_last_amount = comp_last_amount(round_state=round_state,my_uuid=my_uuid)
+    y = net_output*i_stack + my_last_amount
+    
+    tot_pot = get_tot_pot(pot=round_state['pot'])
+    call_amount = [action['amount'] for action in valid_actions if action['action']=='call'][0] 
     min_raise = [action['amount']['min'] for action in valid_actions if action['action']=='raise'][0]
+
     if min_raise == -1:
         min_raise = math.inf
     #print(y)
-    if y<call_price:
-        if call_price==0 or (round_state['street']=='preflop' and call_price ==2*round_state['small_blind_amount'] and is_BB):#not adding chips
-            action='call'
-            amount = call_price
-        else:
-            action='fold'
-            amount = 0
-    elif y< max(call_price+ (1/4)*tot_pot, min_raise):
+    street_was_raised_twice =was_raised_twice(round_state=round_state)
+    if y<call_amount:
+        action, amount = fold_in_limits(valid_actions=valid_actions, round_state = round_state, my_uuid = my_uuid, verbose= False)
+    elif y< min_raise or (street_was_raised_twice and y<(2/3)*i_stack):#max(call_amount+ (1/2)*BB, min_raise):
         action = 'call'
-        amount= call_price
+        amount= call_amount
     else:
-        #action = 'raise'
-        action, amount = raise_in_limits(call_price+ 0.5*tot_pot*round((y-call_price)/(0.5*tot_pot)), valid_actions, verbose)
+        if y>(2/3)*i_stack:
+            action, amount = raise_in_limits(amount=math.inf, valid_actions=valid_actions, verbose=verbose)
+        else:
+            action, amount = raise_in_limits(amount=BB*round(y/BB), valid_actions=valid_actions, verbose=verbose)
+
+        #alternative, only multiples of 0.5*pot
+        #action, amount = raise_in_limits(call_amount+ 0.5*tot_pot*round((y-call_price)/(0.5*tot_pot)), valid_actions, verbose)
     """
     # if wanting to raise by more than 2x tot_pot: go all in
     max_raise = [action['amount']['max'] for action in valid_actions if action['action']=='raise'][0]
@@ -187,9 +204,18 @@ def decision_algo(net_output, round_state, valid_actions, i_stack, is_BB, verbos
     """
     return action, amount
 
-        
-def comp_is_BB(round_state,self):
-    is_BB = len([action for action in round_state['action_histories']['preflop'] if action['uuid']==self.uuid and action['action'] == 'BIGBLIND'])>0
+def comp_last_amount(round_state, my_uuid):
+    my_street_amounts = [action['amount'] for action in round_state['action_histories'][round_state['street']] if action['uuid']==my_uuid]
+    if len(my_street_amounts)==0:
+        last_amount = 0
+    else:
+        last_amount = max(my_street_amounts)
+    return last_amount
+    
+
+    
+def comp_is_BB(round_state, my_uuid):
+    is_BB = len([action for action in round_state['action_histories']['preflop'] if action['uuid']==my_uuid and action['action'] == 'BIGBLIND'])>0
     return is_BB
 
 def comp_n_act_players(round_state):
