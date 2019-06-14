@@ -82,7 +82,7 @@ def is_strong_flush_draw(hole_card, round_state, my_verbose=False):
     and ((hole_card[0].suit == hole_card[1].suit and hole_card[0].suit == flush_color)
     #hole card in flush draw is A or K
     or any([hole_card[j].rank in ['A','K'] for j in range(2)]))):
-        if True:
+        if my_verbose:
             print('Strong flush draw')
             print_cards(hole_card = hole_card, round_state=round_state)
         return True
@@ -109,7 +109,7 @@ def is_strong_straight_draw(hole_card, round_state, my_verbose = False):
     if sum([x==2 for x in nb_neighbors.values()])>=2:
         cards_with_two_neighbors = [d for d, s in zip(nb_neighbors.keys(), [x==2 for x in nb_neighbors.values()]) if s]
         if(abs(cards_with_two_neighbors[0]-cards_with_two_neighbors[1])==1):
-            if(True):
+            if(my_verbose):
                 print('Strong straight draw')
                 print_cards(hole_card = hole_card, round_state=round_state)
             return True
@@ -145,7 +145,7 @@ def format_cards(cards):
     return formatted_cards
 
 
-def comp_hand_equity(hole_card, community_card, n_act_players, nb_board_river = 5, std_err_tol = 1**-3, verbose = False):
+def comp_hand_equity(hole_card, community_card, n_act_players, nb_board_cards = 5, std_err_tol = 1**-3, verbose = False):
     # nb_board_cards : Default is 5. If = 3, showdown is at flop
     # std_err_tol : Default is 10**-5 (in c++). This is the std in % at which the hand equity will be returned
     libname = 'libhandequity.so'
@@ -160,7 +160,7 @@ def comp_hand_equity(hole_card, community_card, n_act_players, nb_board_river = 
 
     
     hand_equity = omp_hand_equity(format_cards(hole_card).encode(), format_cards(community_card).encode(), 
-                                     n_act_players, nb_board_river, std_err_tol, verbose)
+                                     n_act_players, nb_board_cards, std_err_tol, verbose)
     
     return hand_equity
 
@@ -173,7 +173,7 @@ def decision_algo(net_output, round_state, valid_actions, i_stack, my_uuid, verb
     my_last_amount = comp_last_amount(round_state=round_state,my_uuid=my_uuid)
     y = net_output*i_stack + my_last_amount
     
-    tot_pot = get_tot_pot(pot=round_state['pot'])
+    #tot_pot = get_tot_pot(pot=round_state['pot'])
     call_amount = [action['amount'] for action in valid_actions if action['action']=='call'][0] 
     min_raise = [action['amount']['min'] for action in valid_actions if action['action']=='raise'][0]
 
@@ -205,6 +205,7 @@ def decision_algo(net_output, round_state, valid_actions, i_stack, my_uuid, verb
     return action, amount
 
 def comp_last_amount(round_state, my_uuid):
+    #print([action for action in round_state['action_histories'][round_state['street']]])
     my_street_amounts = [action['amount'] for action in round_state['action_histories'][round_state['street']] if action['uuid']==my_uuid]
     if len(my_street_amounts)==0:
         last_amount = 0

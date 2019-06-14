@@ -10,8 +10,8 @@ Created on Fri Mar 22 17:19:30 2019
 from pypokerengine.players import BasePokerPlayer
 #from pypokerengine.utils.card_utils import _pick_unused_card, _fill_community_card, gen_cards
 from functools import reduce
-from utils_bot import raise_in_limits, get_tot_pot, comp_hand_equity, fold_in_limits, comp_is_BB, comp_last_amount
-
+from utils_bot import raise_in_limits, get_tot_pot, comp_hand_equity, fold_in_limits, comp_is_BB, comp_last_amount, print_cards, comp_n_act_players
+import random
 
 my_verbose = False
 
@@ -29,10 +29,10 @@ class EquityBot(BasePokerPlayer):
         self.losses = 0
 
     def declare_action(self, valid_actions, hole_card, round_state):
-        n_act_players = sum([player['state']=='participating' for player in round_state['seats']])
+        n_act_players = comp_n_act_players(round_state)
         # Estimate the win rate
         win_rate = comp_hand_equity(hole_card = hole_card, community_card = round_state['community_card'], n_act_players = n_act_players)
-        
+        #print(win_rate)
         if(my_verbose):    
             print("My cards are: "+ str(hole_card))
             print("My win rate is of: "+str(win_rate)+ "% with num_active_players: " +str(n_act_players))
@@ -43,7 +43,6 @@ class EquityBot(BasePokerPlayer):
             # If so, compute the amount that needs to be called
         call_amount = [item for item in valid_actions if item['action'] == 'call'][0]['amount']
         my_last_amount = comp_last_amount(round_state=round_state,my_uuid=self.uuid)
-
         #else:
          #   call_amount = 0
 
@@ -80,6 +79,10 @@ class EquityBot(BasePokerPlayer):
 
         if(my_verbose):
             print("Taking action :"+ str(action))
+            
+        if random.random() < 0:
+            print_cards(hole_card = hole_card, round_state=round_state)
+            print('action: ' +str(action) + '; amount: ' + str(amount))
         return action, amount
 
     def receive_game_start_message(self, game_info):

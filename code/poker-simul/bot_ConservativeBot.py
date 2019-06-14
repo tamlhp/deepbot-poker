@@ -19,6 +19,8 @@ class ConservativeBot(BasePokerPlayer):
         o = equity**50  
         action, amount = decision_algo(net_output=o, round_state=round_state, valid_actions = valid_actions,
                                        i_stack = self.i_stack, my_uuid = self.uuid, verbose = my_verbose)
+        
+        #print(str(action),str(amount))
         return action, amount   # action returned here is sent to the poker engine
 
     def receive_game_start_message(self, game_info):

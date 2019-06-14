@@ -19,14 +19,14 @@ from collections import OrderedDict
 from operator import add
 
 
-def select_next_gen_bots(log_dir, simul_id, gen_id, all_earnings, BB, nb_bots, all_gen_flat, method = 'GA', nb_gens= 250, ini_stack=20000):
+def select_next_gen_bots(log_dir, simul_id, gen_id, all_earnings, BB, nb_bots, all_gen_flat, method = 'GA', nb_gens= 250, network='first', nb_opps=4, normalize=True):
     mkl.set_num_threads(64)
     #old_gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
     #creating new generation directory
-    lstm_ref = LSTMBot(None)
+    lstm_ref = LSTMBot(None, network=network)
     
     if method =='GA':
-        ANEs = compute_ANE(all_earnings=all_earnings, BB=BB, nb_bots=nb_bots, ini_stack = ini_stack)
+        ANEs = compute_ANE(all_earnings=all_earnings, BB=BB, nb_bots=nb_bots, nb_opps=nb_opps, normalize=normalize)
         ord_bot_ids = [el+1 for el in sorted(range(len(ANEs)), key=lambda i:ANEs[i], reverse=True)]
 
         #SELECTING SURVIVORS
@@ -148,11 +148,19 @@ def crossover_bots(parent_bots_flat, m_sizes_ref, nb_new_bots):
         i_start=0
         child_flat_params = []
         for layer in sorted(dict_sizes.keys()):
-            if random.random()<0.5:
-                child_flat_params= child_flat_params+list(first_parent[i_start:i_start+dict_sizes[layer]['numel']])
+            if layer == 'lin_dec_1.weight':  #special case for very large dense layer
+                for i in range(int(dict_sizes[layer]['numel']/500)): # splitting by groups of 500
+                    if random.random()<0.5:
+                        child_flat_params= child_flat_params+list(first_parent[i_start:i_start+500])
+                    else:
+                        child_flat_params = child_flat_params+list(second_parent[i_start:i_start+500])                
+                    i_start+=500
             else:
-                child_flat_params = child_flat_params+list(second_parent[i_start:i_start+dict_sizes[layer]['numel']])
-            i_start+=dict_sizes[layer]['numel']
+                if random.random()<0.5:
+                    child_flat_params= child_flat_params+list(first_parent[i_start:i_start+dict_sizes[layer]['numel']])
+                else:
+                    child_flat_params = child_flat_params+list(second_parent[i_start:i_start+dict_sizes[layer]['numel']])
+                i_start+=dict_sizes[layer]['numel']
         
             
         cross_bots.append(torch.Tensor(child_flat_params))
@@ -168,7 +176,7 @@ def mutate_bots(orig_bots_flat, mut_rate, mut_strength, nb_new_bots):
     
 
 
-def compute_ANE(all_earnings, BB, nb_bots=50, load = False, gen_dir = None, nb_opps = 4, ini_stack = 20000):
+def compute_ANE(all_earnings, BB, nb_bots=50, load = False, gen_dir = None, nb_opps = 4, normalize=True):
     if load:
         all_earnings = [0,]*nb_bots
         for bot_id in range (1,nb_bots+1):
@@ -176,19 +184,23 @@ def compute_ANE(all_earnings, BB, nb_bots=50, load = False, gen_dir = None, nb_o
                 all_earnings[bot_id-1] = pickle.load(f)
         
     earnings_arr = np.array([list(earning.values()) for earning in all_earnings])
-    #set all values to positive
-    earnings_arr = [list(earning + 2*ini_stack*np.ones(nb_opps)) for earning in earnings_arr]
-   # earnings_arr = [list(earning) for earning in earnings_arr]   
-    n_j = np.max([BB*np.ones(nb_opps),np.max(earnings_arr,axis=0)/2], axis=0)
     
-    #alternative approach
-
-    #use average earnings
-    #n_j = np.max([np.sqrt(BB*np.ones(nb_opps)),np.average(earnings_arr,axis=0)], axis=0)
+    if normalize==True:
+        #set all values to positive
+       # earnings_arr = [list(earning) for earning in earnings_arr]   
+        n_j_pos = np.max([BB*np.ones(nb_opps),np.max(earnings_arr,axis=0)], axis=0)
+        n_j_neg = np.max([BB*np.ones(nb_opps),np.abs(np.min(earnings_arr,axis=0))], axis=0)
+        print('ANEs positive normalization factors: ' +str(n_j_pos))
+        print('ANEs begative normalization factors: ' +str(n_j_neg))
+        #alternative approach
     
-    print('ANEs normalization factors: ' +str(n_j))
-    
-    return np.sum(earnings_arr/n_j, axis = 1)/nb_opps
+        #use average earnings
+        #n_j = np.max([np.sqrt(BB*np.ones(nb_opps)),np.average(earnings_arr,axis=0)], axis=0)
+        
+        ANEs = np.sum(np.where(earnings_arr>0, earnings_arr/n_j_pos, earnings_arr/n_j_neg), axis = 1)/nb_opps
+    else:
+        ANEs = np.sum(earnings_arr, axis = 1)/nb_opps
+    return ANEs
 
 
 def get_flat_params(full_dict):
@@ -217,8 +229,8 @@ def get_dict_sizes(state_dict, i_opp, i_gen):
         dict_sizes[key]['shape'] = list(all_dicts[key].shape)
     return dict_sizes
 
-def get_best_ANE_earnings(all_earnings, BB=100, nb_bots = 50, ini_stack=20000):
-    ANEs = compute_ANE(all_earnings=all_earnings, BB=BB, nb_bots=nb_bots, ini_stack = ini_stack)
+def get_best_ANE_earnings(all_earnings, BB=100, nb_bots = 50, nb_opps=4, normalize=True):
+    ANEs = compute_ANE(all_earnings=all_earnings, BB=BB, nb_bots=nb_bots, nb_opps=nb_opps, normalize=normalize)
     best_bot_id = [el for el in sorted(range(len(ANEs)), key=lambda i:ANEs[i], reverse=True)][0]
     return all_earnings[best_bot_id]
     #print('Highest ANE is ' + str(max(ANEs) )

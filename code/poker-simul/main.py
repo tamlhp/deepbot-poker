@@ -26,72 +26,64 @@ import random
 
 nb_cards = 52
 nb_hands = 500
-
+"""
 ###CONSTANTS
-nb_bots= 1
-simul_id = 0
-log_dir = './simul_data'
-sb_amount = 50
-ini_stack = 2000
-nb_generations = 250
-bot_id = 1
-gen_dir='./simul_data/simul_0/gen_0'
-
-lstm_ref = LSTMBot(None)
-
-print('## Starting ##')
-## prepare first gen lstm bots and decks
-#gen_rand_bots(simul_id = simul_id, gen_id=0, log_dir=log_dir, nb_bots = nb_bots)
-gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = 500)
-
-backed_gen_dir = '../../../backed_simuls/simul_5/gen_15'
-
-#backed_gen_dir= './simul_data/simul_5/gen_1'
-with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:  
-    lstm_bot_flat = pickle.load(f)
-    lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
-    lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict)
-
-#load decks
-with open(gen_dir+'/cst_decks.pkl', 'rb') as f:  
-    cst_decks = pickle.load(f)
-    
-cst_decks_match = cst_decks.copy()
-sum_won=0
-for i in range(20):
-    config = setup_config(max_round=nb_hands, initial_stack=ini_stack, small_blind_amount=50)
-    config.register_player(name="p1", algorithm=ManiacBot())
-    config.register_player(name="p2", algorithm=CandidBot())
-    game_result = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_decks_match)
-    #print(game_result)
-    sum_won+=game_result['players'][0]['stack']
-print(sum_won-20*ini_stack)
-
+lstm_bot=LSTMBot(network='second')
+sum_=0
+for key in lstm_bot.full_dict.keys():
+    print(key)
+    print(lstm_bot.full_dict[key].view(-1).size())
+    sum_+=lstm_bot.full_dict[key].view(-1).size()[0]
+print(sum_)
 """
-log_dir = './simul_data'
-gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = 500)
 
 
-gen_dir='./simul_data/simul_0/gen_0'
+for i in range(200):
+    log_dir = './simul_data'
+    gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = 500, overwrite=True)
 
-with open(gen_dir+'/cst_cheat_ids.pkl', 'rb') as f:  
-    cst_cheat_ids = pickle.load(f)
 
+    gen_dir='./simul_data/simul_0/gen_0'
     
-time_1 = time.time()
-config = setup_config(max_round=500, initial_stack=200000, small_blind_amount=50)
-config.register_player(name="p1", algorithm=CandidBot())
-config.register_player(name="p2", algorithm=ManiacBot())
-config.register_player(name="p3", algorithm=ConservativeBot())
-config.register_player(name="p4", algorithm=CallBot())
-config.register_player(name="p5", algorithm=PStratBot())
-config.register_player(name="p6", algorithm=LSTMBot())
-
-game_result = start_poker(config, verbose=0, cheat = True,cst_cheat_ids = cst_cheat_ids.copy())
-time_2 = time.time()
-#print(str(time_2-time_1))
-print(game_result)
-"""
+    with open(gen_dir+'/cst_decks.pkl', 'rb') as f:  
+        cst_decks = pickle.load(f)
+    lstm_bot = LSTMBot(input_type='pstratstyle', network='6max_single')
+    config = setup_config(max_round=nb_hands, initial_stack=1500, small_blind_amount=10)
+    config.register_player(name="p1", algorithm=PStratBot())
+    config.register_player(name="p2", algorithm=PStratBot())
+    config.register_player(name="p3", algorithm=PStratBot())
+    config.register_player(name="p4", algorithm=PStratBot())
+    config.register_player(name="p5", algorithm=PStratBot())
+    config.register_player(name="lstm_bot", algorithm=lstm_bot)
+    #config.register_player(name="p6", algorithm=CallBot())
+    
+    plays_per_blind=90
+    blind_structure={0*plays_per_blind:{'ante':0, 'small_blind':10},\
+                     1*plays_per_blind:{'ante':0, 'small_blind':15},\
+                     2*plays_per_blind:{'ante':0, 'small_blind':25},\
+                     3*plays_per_blind:{'ante':0, 'small_blind':50},\
+                     4*plays_per_blind:{'ante':0, 'small_blind':100},\
+                     5*plays_per_blind:{'ante':25, 'small_blind':100},\
+                     6*plays_per_blind:{'ante':25, 'small_blind':200},\
+                     7*plays_per_blind:{'ante':50, 'small_blind':300},\
+                     8*plays_per_blind:{'ante':50, 'small_blind':400},\
+                     9*plays_per_blind:{'ante':75, 'small_blind':600},\
+            }
+    config.set_blind_structure(blind_structure)
+    
+    game_result, last_two_players = start_poker(config, verbose=0, cheat = True,cst_deck_ids = cst_decks.copy())
+    time_2 = time.time()
+    #print(str(time_2-time_1))
+    my_game_results=-1
+    if lstm_bot.round_count==nb_hands:
+        print('Game could not finish in max number of hands')
+        my_game_results = 0
+    else:
+        if "lstm_bot" in last_two_players:
+            my_game_results=1
+        if game_result['players'][5]['stack']>0:
+            my_game_results=3
+    print(my_game_results)
 """
 time1 = time.time()
 config = setup_config(max_round=1000, initial_stack=200000, small_blind_amount=10)
