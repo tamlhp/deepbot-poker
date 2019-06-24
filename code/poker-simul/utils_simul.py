@@ -58,7 +58,7 @@ def run_one_game_reg(simul_id , gen_id, lstm_bot, nb_hands = 500, ini_stack = 20
             config = setup_config(max_round=int(nb_hands/nb_sub_matches)-1, initial_stack=ini_stack, small_blind_amount=sb_amount)
             config.register_player(name=lstm_bot.opponent, algorithm=opp_algo)
             config.register_player(name="lstm_bot", algorithm= lstm_bot)
-            game_result_1, _ = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match)
+            game_result_1 = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two=False)
             ##Fixing issue with missing last SB in certain wins
             if game_result_1['players'][1]['stack'] == 2*ini_stack-sb_amount:
                 game_result_1['players'][1]['stack'] = 2*ini_stack
@@ -75,7 +75,7 @@ def run_one_game_reg(simul_id , gen_id, lstm_bot, nb_hands = 500, ini_stack = 20
             config = setup_config(max_round=int(nb_hands/nb_sub_matches)-1, initial_stack=ini_stack, small_blind_amount=sb_amount)
             config.register_player(name="lstm_bot", algorithm=lstm_bot)
             config.register_player(name=lstm_bot.opponent, algorithm=opp_algo)
-            game_result_2, _ = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match)
+            game_result_2 = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two=False)
             ##Fixing issue with missing last SB in certain wins
             if game_result_2['players'][0]['stack'] == 2*ini_stack-sb_amount:
                 game_result_2['players'][0]['stack'] = 2*ini_stack
@@ -121,7 +121,7 @@ def run_one_game_rebuys(lstm_bot, nb_hands = 500, ini_stack = 3000, sb_amount = 
             config = setup_config(max_round=max_round, initial_stack=ini_stack, small_blind_amount=sb_amount)
             config.register_player(name=lstm_bot.opponent, algorithm=opp_algo)
             config.register_player(name="lstm_bot", algorithm= lstm_bot)
-            game_result_1, _ = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match)
+            game_result_1 = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two=False)
             ##Fixing issue with missing last SB in certain wins
             if game_result_1['players'][1]['stack'] == 2*ini_stack-sb_amount:
                 game_result_1['players'][1]['stack'] = 2*ini_stack
@@ -143,7 +143,7 @@ def run_one_game_rebuys(lstm_bot, nb_hands = 500, ini_stack = 3000, sb_amount = 
             config = setup_config(max_round=max_round, initial_stack=ini_stack, small_blind_amount=sb_amount)
             config.register_player(name="lstm_bot", algorithm=lstm_bot)
             config.register_player(name=lstm_bot.opponent, algorithm=opp_algo)
-            game_result_2, _ = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match)
+            game_result_2 = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two=False)
             ##Fixing issue with missing last SB in certain wins
             if game_result_2['players'][0]['stack'] == 2*ini_stack-sb_amount:
                 game_result_2['players'][0]['stack'] = 2*ini_stack
@@ -217,7 +217,7 @@ def run_one_game_6max_single(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amou
                 for i in range(nb_players_6max-ini_hero_pos-1):
                     config.register_player(name=lstm_bot.opponent+str(opp_id), algorithm=opp_algo())
                 config.set_blind_structure(blind_structure.copy())
-                game_result, last_two_players = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match)
+                game_result, last_two_players = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True)
                 if lstm_bot.round_count==max_round:
                     print('Game could not finish in max number of hands')
                     my_game_results[full_game_id][ini_hero_pos] = 0

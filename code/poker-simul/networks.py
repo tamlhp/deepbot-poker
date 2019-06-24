@@ -156,10 +156,14 @@ class Net_6maxFull(nn.Module):
         self.LSTM_opp_round = [0,]*self.nb_players
         self.LSTM_opp_game = [0,]*self.nb_players
         for opponent_id in range(self.nb_opponents):
-            for i in range(10):
-                self.LSTM_opp.append(nn.LSTM(8, 10))
-                self.LSTM_opp = nn.ModuleList(self.LSTM_opp)
-            self.lin_dec_1_opp = nn.linear(40,20)
+            for i in range(5):
+                self.LSTM_opp_round[opponent_id].append(nn.LSTM(4, 4))
+            self.LSTM_opp_round[opponent_id] = nn.ModuleList(self.LSTM_opp_round[opponent_id])
+            for i in range(5):
+                self.LSTM_opp_game[opponent_id].append(nn.LSTM(4, 4))
+            self.LSTM_opp_game[opponent_id] = nn.ModuleList(self.LSTM_opp_game[opponent_id])
+            
+        self.lin_dec_1_opp = nn.linear(40,20)
         
         
         self.lin_dec_2 = nn.Linear(70, 10)
@@ -185,24 +189,33 @@ class Net_6maxFull(nn.Module):
         
         #Opponent blocks
         #nb_opps=len(x[12:])/4
-        x_opp=torch.Tensor([0,]*5)
-        for opp_id in range(5):
+        x_opp_out=torch.Tensor([0,]*self.nb_opponents)
+        active_opps_out=[]
+        for opp_id in range(self.nb_opponents):
             x_opp = x[12+opp_id*5:12+(opp_id+1)*5]
             x_active = x_opp[0]
             x_opp = x_opp[1:]    
             
-            x_opp_all, (self.u_opp['opp_h0_0'], self.u_opp['opp_c0_0']) = self.LSTM_opp[0](x, (self.u_opp['opp_h0_0'], self.u_opp['opp_c0_0']))
-            for i in range(1,10):
-                x_opp, (self.u_opp['opp_h0_'+str(i)], self.u_opp['opp_c0_'+str(i)]) = self.LSTM_opp[i](x, (self.u_opp['opp_h0_'+str(i)], self.u_opp['opp_c0_'+str(i)]))
-                x_opp_all = torch.cat((x_opp_all,x_opp),0)
+            ##opponent game lstms
+            x_opp_all, (self.u_opp_game['opp_game_h0_0'], self.u_opp_game['opp_game_c0_0']) = self.LSTM_opp_game[0](x, (self.u_opp_game['opp_game_h0_0'], self.u_opp_game['opp_game_c0_0']))
+            for i in range(1,5):
+                x_opp_game, (self.u_opp_game['opp_game_h0_'+str(i)], self.u_opp_game['opp_game_c0_'+str(i)]) = self.LSTM_opp_game[i](x, (self.u_opp_game['opp_game_h0_'+str(i)], self.u_opp_game['opp_game_c0_'+str(i)]))
+                x_opp_all = torch.cat((x_opp_all,x_opp_game),0)
+            for i in range(0,5):
+                x_opp_round, (self.u_opp_round['opp_round_h0_'+str(i)], self.u_opp_round['opp_round_c0_'+str(i)]) = self.LSTM_opp_round[i](x, (self.u_opp_round['opp_round_h0_'+str(i)], self.u_opp_round['opp_round_c0_'+str(i)]))
+                x_opp_all = torch.cat((x_opp_all,x_opp_game),0)
+                
             x_opp_out = x_opp_all.view(1,1,-1) 
             #linear layer
             x_lin_h_1_opp = torch.tanh(self.lin_dec_1_opp(x_opp_out))
+            if x_active==1:
+                active_opps_out.append(x_lin_h_1_opp)
             
-        x_lin_h_1_opp_avg = np.average()
+        #Average of active opponent outputs
+        x_lin_h_1_opp_avg = torch.stack(active_opps_out).mean(0)
         
         #final linear layers
-        x_lin_h_2 = torch.tanh(self.lin_dec_2(torch.cat((x_lin_h_1_gen,x_lin_h_1_opp),2)))
+        x_lin_h_2 = torch.tanh(self.lin_dec_2(torch.cat((x_lin_h_1_gen,x_lin_h_1_opp_avg),2)))
         x_out = torch.tanh(self.lin_dec_3(x_lin_h_2))
         return x_out
 

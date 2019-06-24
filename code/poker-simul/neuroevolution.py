@@ -166,6 +166,11 @@ def crossover_bots(parent_bots_flat, m_sizes_ref, nb_new_bots):
         cross_bots.append(torch.Tensor(child_flat_params))
     return cross_bots#[:30] # truncate to leave some spots for mutants
 
+
+
+
+
+
 def mutate_bots(orig_bots_flat, mut_rate, mut_strength, nb_new_bots):
     mutant_bots=[]
     for i in range(nb_new_bots):

@@ -18,7 +18,7 @@ from collections import OrderedDict
 from torch.nn import functional as F
 import random
 from utils_io import write_declare_action_state, write_round_start_state, write_round_result_state, find_action_id, find_round_id
-
+import pickle
 
 my_verbose_upper = False
 write_details = False
@@ -27,7 +27,7 @@ from networks import Net, Net_2, Net_6maxSingle
     
     
 class LSTMBot(BasePokerPlayer):  
-    def __init__(self, id_=1, gen_dir='./simul_data/simul_0/gen_0', full_dict = None, network='first', input_type='reg'):
+    def __init__(self, id_=1, gen_dir='./simul_data/simul_0/gen_0', full_dict = None, network='first', input_type='reg', validation_mode=None, validation_id=None):
     
         self.network = network
         if full_dict == None:
@@ -60,6 +60,9 @@ class LSTMBot(BasePokerPlayer):
         self.opponent = None
         self.input_type = input_type
         self.num_players = 6
+        self.validation_mode = validation_mode
+        self.validation_id = validation_id
+        self.round_count=0
 
     #  we define the logic to make an action through this method. (so this method would be the core of your AI)
     def declare_action(self, valid_actions, hole_card, round_state):
@@ -78,7 +81,17 @@ class LSTMBot(BasePokerPlayer):
                                hole_card = hole_card, round_state = round_state, strat=None, action=action, amount = amount,
                                csv_file = self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_declare_action_state.csv')
             self.action_id+=1
-        if random.random() < 0.01:
+        if self.validation_mode == "mutation_variance":
+            with open(self.gen_dir+'/outputs_'+str(self.validation_id)+'.pkl', 'ab') as f:  
+                pickle.dump(net_output, f, protocol=0)
+            action, amount = 'fold',0
+        if self.validation_mode=="crossover_variance":
+            with open(self.gen_dir+'/outputs_'+str(self.validation_id)+'.pkl', 'ab') as f:  
+                pickle.dump(net_output, f, protocol=0)
+            action, amount = 'fold',0
+
+            
+        if random.random() < 0:
             print('\n LSTM')
             print('net input: ' +str(input_tensor))
             print_cards(hole_card = hole_card, round_state=round_state)

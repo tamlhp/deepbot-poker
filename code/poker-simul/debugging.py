@@ -37,14 +37,17 @@ ini_stack = 20000
 nb_generations = 250
 bot_id = 1
 gen_dir='./simul_data/simul_0/gen_0'
+my_network='second'
 
-lstm_ref = LSTMBot(None, network='second')
+lstm_ref = LSTMBot(None, network=my_network)
 
+print(len(lstm_ref.full_dict))
+print([len(lstm_ref.full_dict[layer].view(-1)) for layer in lstm_ref.full_dict])
 
 #### CONSISTENCY OF RUNS (FROM LOADING)
 print('## Starting ##')
 ## prepare first gen lstm bots and decks
-gen_rand_bots(simul_id = simul_id, gen_id=0, log_dir=log_dir, nb_bots = nb_bots, network='second')
+gen_rand_bots(simul_id = simul_id, gen_id=0, log_dir=log_dir, nb_bots = nb_bots, network=my_network, overwrite=True)
 gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = 500)
 #load decks
 with open(gen_dir+'/cst_decks.pkl', 'rb') as f:  
@@ -59,7 +62,7 @@ with open(gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as
     print('lstm bot dict: ' + str(lstm_bot_dict['opp_h0_4'][0][0][:5]))
     #print('lstm_bot_dict: ' +str(lstm_bot_dict['lin_dec_1.weight'][0][:5]))
     #print('lstm_bot_dict: ' +str(lstm_bot_dict['lin_dec_1.weight'][8][:5]))
-    lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network='second')
+    lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
 config = setup_config(max_round=nb_hands, initial_stack=20000, small_blind_amount=50)
 config.register_player(name="p1", algorithm=lstm_bot)
 config.register_player(name="p2", algorithm=ManiacBot())
@@ -74,7 +77,7 @@ with open(gen_dir+'/bots/'+str(bot_id+1)+'/bot_'+str(bot_id+1)+'_flat.pkl', 'rb'
     print('lstm bot 2 dict: ' + str(lstm_bot_dict_2['opp_h0_4'][0][0][:5]))
     #print('lstm bot 2 dict: ' +str(lstm_bot_dict_2['lin_dec_1.weight'][0][:5]))
     #print('lstm bot 2 dict: ' +str(lstm_bot_dict_2['lin_dec_1.weight'][8][:5]))
-    lstm_bot_2 = LSTMBot(id_=bot_id+1, gen_dir = None, full_dict = lstm_bot_dict_2, network='second')
+    lstm_bot_2 = LSTMBot(id_=bot_id+1, gen_dir = None, full_dict = lstm_bot_dict_2, network=my_network)
 config = setup_config(max_round=nb_hands, initial_stack=20000, small_blind_amount=50)
 config.register_player(name="p1", algorithm=lstm_bot_2)
 config.register_player(name="p2", algorithm=ManiacBot())
@@ -89,7 +92,7 @@ mutant_flat = mutate_bots(orig_bots_flat=[get_flat_params(lstm_bot.full_dict)], 
 mutant_dict = get_full_dict(all_params = mutant_flat, m_sizes_ref = lstm_ref)
 print('mutant dict: ' +str(mutant_dict['opp_h0_4'][0][0][:5]))
     
-mutant_bot = LSTMBot(id_=5, gen_dir = None, full_dict = mutant_dict, network='second')
+mutant_bot = LSTMBot(id_=5, gen_dir = None, full_dict = mutant_dict, network=my_network)
 config = setup_config(max_round=nb_hands, initial_stack=20000, small_blind_amount=50)
 config.register_player(name="p1", algorithm=mutant_bot)
 config.register_player(name="p2", algorithm=ManiacBot())
@@ -105,7 +108,7 @@ print('cross dict: ' +str(cross_dict['opp_h0_4'][0][0][:5]))
 #print('cross dict: ' +str(cross_dict['lin_dec_1.weight'][8][:5]))
 
 
-cross_bot = LSTMBot(id_=6, gen_dir = None, full_dict = cross_dict, network='second')
+cross_bot = LSTMBot(id_=6, gen_dir = None, full_dict = cross_dict, network=my_network)
 config = setup_config(max_round=nb_hands, initial_stack=20000, small_blind_amount=50)
 config.register_player(name="p1", algorithm=cross_bot)
 config.register_player(name="p2", algorithm=ManiacBot())

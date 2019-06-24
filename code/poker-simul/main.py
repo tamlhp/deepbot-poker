@@ -38,7 +38,7 @@ print(sum_)
 """
 
 
-for i in range(200):
+for i in range(1):
     log_dir = './simul_data'
     gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = 500, overwrite=True)
 
@@ -71,7 +71,7 @@ for i in range(200):
             }
     config.set_blind_structure(blind_structure)
     
-    game_result, last_two_players = start_poker(config, verbose=0, cheat = True,cst_deck_ids = cst_decks.copy())
+    game_result, last_two_players = start_poker(config, verbose=0, cheat = True,cst_deck_ids = cst_decks.copy(), return_last_two = True)
     time_2 = time.time()
     #print(str(time_2-time_1))
     my_game_results=-1
