@@ -12,7 +12,7 @@ from pypokerengine.players import BasePokerPlayer
 import torch
 from torch import nn
 import os
-from utils_bot import get_tot_pot, comp_hand_equity, decision_algo, comp_is_BB, comp_n_act_players, print_cards, print_state, was_raised, comp_last_amount
+from utils_bot import get_tot_pot, comp_hand_equity, decision_algo, comp_is_BB, comp_n_act_players, print_cards, print_state, was_raised, comp_last_amount,comp_last_amount_opp
 import re
 from collections import OrderedDict
 from torch.nn import functional as F
@@ -23,9 +23,46 @@ import pickle
 my_verbose_upper = False
 write_details = False
 
-from networks import Net, Net_2, Net_6maxSingle
+from networks import Net, Net_2, Net_6maxSingle, Net_6maxFull
     
-    
+def reduce_full_dict(full_dict):
+    nb_opps=5
+    nb_LSTM = 10
+    for opp_id in range(1,nb_opps):
+        for lstm_id in range(nb_LSTM):
+            full_dict.pop('LSTM_opp_round.'+str(opp_id)+'.'+str(lstm_id)+'.bias_ih_l0',None)
+            full_dict.pop('LSTM_opp_round.'+str(opp_id)+'.'+str(lstm_id)+'.bias_hh_l0',None)
+            full_dict.pop('LSTM_opp_round.'+str(opp_id)+'.'+str(lstm_id)+'.weight_ih_l0',None)
+            full_dict.pop('LSTM_opp_round.'+str(opp_id)+'.'+str(lstm_id)+'.weight_hh_l0',None)
+            full_dict.pop('LSTM_opp_game.'+str(opp_id)+'.'+str(lstm_id)+'.bias_ih_l0',None)
+            full_dict.pop('LSTM_opp_game.'+str(opp_id)+'.'+str(lstm_id)+'.bias_hh_l0',None)
+            full_dict.pop('LSTM_opp_game.'+str(opp_id)+'.'+str(lstm_id)+'.weight_ih_l0',None)
+            full_dict.pop('LSTM_opp_game.'+str(opp_id)+'.'+str(lstm_id)+'.weight_hh_l0',None)
+            full_dict.pop('opp_round_h0_'+str(opp_id)+'_'+str(lstm_id),None)
+            full_dict.pop('opp_round_c0_'+str(opp_id)+'_'+str(lstm_id),None)
+            full_dict.pop('opp_game_h0_'+str(opp_id)+'_'+str(lstm_id),None)
+            full_dict.pop('opp_game_c0_'+str(opp_id)+'_'+str(lstm_id),None)
+    return full_dict
+
+def extend_full_dict(full_dict):
+    nb_opps=5
+    nb_LSTM = 10
+    for opp_id in range(1,nb_opps):
+        for lstm_id in range(nb_LSTM):
+            full_dict.pop('LSTM_opp_round.'+str(opp_id)+'.'+str(lstm_id)+'.bias_ih_l0',None)
+            full_dict.pop('LSTM_opp_round.'+str(opp_id)+'.'+str(lstm_id)+'.bias_hh_l0',None)
+            full_dict.pop('LSTM_opp_round.'+str(opp_id)+'.'+str(lstm_id)+'.weight_ih_l0',None)
+            full_dict.pop('LSTM_opp_round.'+str(opp_id)+'.'+str(lstm_id)+'.weight_hh_l0',None)
+            full_dict.pop('LSTM_opp_game.'+str(opp_id)+'.'+str(lstm_id)+'.bias_ih_l0',None)
+            full_dict.pop('LSTM_opp_game.'+str(opp_id)+'.'+str(lstm_id)+'.bias_hh_l0',None)
+            full_dict.pop('LSTM_opp_game.'+str(opp_id)+'.'+str(lstm_id)+'.weight_ih_l0',None)
+            full_dict.pop('LSTM_opp_game.'+str(opp_id)+'.'+str(lstm_id)+'.weight_hh_l0',None)
+            full_dict.pop('opp_round_h0_'+str(opp_id)+'_'+str(lstm_id),None)
+            full_dict.pop('opp_round_c0_'+str(opp_id)+'_'+str(lstm_id),None)
+            full_dict.pop('opp_game_h0_'+str(opp_id)+'_'+str(lstm_id),None)
+            full_dict.pop('opp_game_c0_'+str(opp_id)+'_'+str(lstm_id),None)
+    return full_dict
+
 class LSTMBot(BasePokerPlayer):  
     def __init__(self, id_=1, gen_dir='./simul_data/simul_0/gen_0', full_dict = None, network='first', input_type='reg', validation_mode=None, validation_id=None):
     
@@ -39,12 +76,18 @@ class LSTMBot(BasePokerPlayer):
                 self.model=Net_2(i_opp,i_gen)
             elif self.network == '6max_single':
                 self.model=Net_6maxSingle(i_gen)
+            elif self.network == '6max_full':
+                self.model=Net_6maxFull(i_opp,i_gen)
             self.state_dict = next(self.model.modules()).state_dict()   #weights are automaticaly generated
             full_dict_ = self.state_dict.copy()
-            full_dict_.update(i_opp), full_dict_.update(i_gen)    
+            full_dict_.update(i_opp), full_dict_.update(i_gen) 
+            if self.network == '6max_full':
+                full_dict_=reduce_full_dict(full_dict_)
             self.full_dict = full_dict_
         else:
             self.full_dict= full_dict
+            if self.network == '6max_full':
+                full_dict = extend_full_dict(full_dict)
             self.state_dict, i_opp, i_gen = get_sep_dicts(full_dict)
             if self.network =='first':
                 self.model = Net(i_opp,i_gen)
@@ -52,6 +95,8 @@ class LSTMBot(BasePokerPlayer):
                 self.model=Net_2(i_opp,i_gen)
             elif self.network == '6max_single':
                 self.model=Net_6maxSingle(i_gen)
+            elif self.network == '6max_full':
+                self.model=Net_6maxFull(i_opp,i_gen)
             self.model.load_state_dict(self.state_dict)
         self.id = id_
         self.gen_dir = gen_dir
@@ -68,7 +113,7 @@ class LSTMBot(BasePokerPlayer):
     def declare_action(self, valid_actions, hole_card, round_state):
         # valid_actions format => [raise_action_info, call_action_info, fold_action_info]
         self.new_round_handle(round_state)
-        input_tensor = self.prep_input(hole_card, round_state, valid_actions, inputs=self.input_type)
+        input_tensor = self.prep_input(hole_card, round_state, valid_actions, input_type=self.input_type)
         #print('input tensor: '+str(input_tensor))
         net_output = self.net_predict(input_tensor)
         #print('net output: ' +str(net_output))
@@ -136,8 +181,15 @@ class LSTMBot(BasePokerPlayer):
             i_opp_keys = ['opp_h0_'+str(i) for i in range(10)]+['opp_c0_'+str(i) for i in range(10)]
             for key in i_opp_keys:
                 i_opp[key]=torch.randn(10).view(1,1,10)
-        #elif self.network=='6maxSingle':
-            #i_opp=None
+        elif self.network=='6max_full':
+            i_opp_keys=[]
+            for opp_id in range(5):
+                i_opp_keys.extend(['opp_round_h0_'+str(opp_id)+'_'+str(i) for i in range(10)]+['opp_round_c0_'+str(opp_id)+'_'+str(i) for i in range(10)])
+            for key in i_opp_keys:
+                if key.split('_')[3]=='0':
+                    i_opp[key]=torch.randn(5).view(1,1,5)
+                else:
+                    i_opp[key]=i_opp['_'.join(key.split('_')[:3]+['0']+key.split('_')[4:])].clone()
         return i_opp
     
     def init_i_gen(self):
@@ -145,6 +197,15 @@ class LSTMBot(BasePokerPlayer):
         i_gen = OrderedDict()
         for key in i_gen_keys:
             i_gen[key]=torch.randn(10).view(1,1,10)
+        if self.network=='6max_full':
+            i_gen_keys_opp=[]
+            for opp_id in range(5):
+                i_gen_keys_opp.extend(['opp_game_h0_'+str(opp_id)+'_'+str(i) for i in range(10)]+['opp_game_c0_'+str(opp_id)+'_'+str(i) for i in range(10)])
+            for key in i_gen_keys_opp:
+                if key.split('_')[3]=='0':
+                    i_gen[key]=torch.randn(5).view(1,1,5)
+                else:
+                    i_gen[key]=i_gen['_'.join(key.split('_')[:3]+['0']+key.split('_')[4:])].clone()
         return i_gen
     
     def new_round_handle(self, round_state):
@@ -152,9 +213,9 @@ class LSTMBot(BasePokerPlayer):
             self.model.reset_u_gen()
         return
     
-    def prep_input(self, hole_card, round_state, valid_actions, inputs = 'reg'):
+    def prep_input(self, hole_card, round_state, valid_actions, input_type = 'reg'):
         
-        if inputs =='reg':
+        if input_type =='reg':
             n_act_players = comp_n_act_players(round_state)
             
             input_size = 8
@@ -185,9 +246,11 @@ class LSTMBot(BasePokerPlayer):
             
             #setting my pot-odd
             call_amount = [action['amount'] for action in valid_actions if action['action']=='call'][0]
-            inputs[7] = call_amount/(call_amount+tot_pot)
+            my_last_amount= comp_last_amount(round_state=round_state, my_uuid=self.uuid)
+            call_price = call_amount-my_last_amount
+            inputs[7] = call_price/(call_price+tot_pot)
         
-        elif inputs == 'pstratstyle':
+        elif input_type.split('_')[0] == 'pstratstyle':
             n_act_players = comp_n_act_players(round_state)
             
             input_size = 12
@@ -241,8 +304,44 @@ class LSTMBot(BasePokerPlayer):
             
             
             #print(inputs)
-            
-
+            if len(input_type.split('_'))>1:
+                if input_type.split('_')[1] == '6max':
+                    nb_opps=5
+                    nb_feats=5
+                    opp_ids = [1,2,3,4,5,6]
+                    opp_ids.remove(int(self.uuid.split('-')[1]))
+                    opp_input_size=nb_opps*nb_feats
+                    opp_inputs=[0,]*opp_input_size
+                    nb_folded_since=0
+                    for i in range(nb_opps):
+                        opp_last_amount= comp_last_amount_opp(round_state=round_state,my_uuid='uuid-'+str(opp_ids[i]))
+                        for player in round_state['seats']:
+                            if player['name']=='p-'+str(opp_ids[i]):
+                                #setting active / unactive bit
+                                opp_inputs[0+i*nb_feats]= not(player['state']=='folded')*1
+                                ###opponents stack
+                                opp_inputs[1+i*nb_feats]=player['stack']/self.i_stack
+                                break
+                                
+                        for k, action in enumerate(round_state['action_histories'][round_state['street']][::-1]):
+                            if action['uuid']==self.uuid:
+                                break
+                            elif action['uuid']=='uuid-'+str(opp_ids[i]):
+                                street_amount = max([action['amount'] for action in round_state['action_histories'][round_state['street']][::-1][(k+1):] if action['action']!='FOLD']+[0])
+                                if action['action']=='FOLD':
+                                    amount=0
+                                else:
+                                    amount=action['amount']
+                                #opponents paid amount
+                                opp_inputs[2+i*nb_feats]=(amount-opp_last_amount)/self.i_stack
+                                #opponents faced call price
+                                opp_inputs[3+i*nb_feats]=(street_amount-opp_last_amount)/self.i_stack
+                                nb_folded_since= sum([action['action']=='FOLD' for action in round_state['action_histories'][round_state['street']][::-1][:k]])
+                                break
+                        #nb opponent players
+                        opp_inputs[4+i*nb_feats]= (n_act_players-1+nb_folded_since)/self.num_players
+                    inputs=inputs+opp_inputs
+        #print(len(inputs))
         return torch.Tensor(inputs).view(1, 1, -1)
  
     

@@ -25,7 +25,7 @@ from neuroevolution import get_full_dict
 import random
 
 nb_cards = 52
-nb_hands = 500
+nb_hands = 1
 """
 ###CONSTANTS
 lstm_bot=LSTMBot(network='second')
@@ -37,7 +37,8 @@ for key in lstm_bot.full_dict.keys():
 print(sum_)
 """
 
-
+my_network = '6max_full'
+my_input_type=  'pstratstyle_6max'
 for i in range(1):
     log_dir = './simul_data'
     gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = 500, overwrite=True)
@@ -47,13 +48,13 @@ for i in range(1):
     
     with open(gen_dir+'/cst_decks.pkl', 'rb') as f:  
         cst_decks = pickle.load(f)
-    lstm_bot = LSTMBot(input_type='pstratstyle', network='6max_single')
+    lstm_bot = LSTMBot(input_type='pstratstyle_6max', network=my_network)
     config = setup_config(max_round=nb_hands, initial_stack=1500, small_blind_amount=10)
-    config.register_player(name="p1", algorithm=PStratBot())
-    config.register_player(name="p2", algorithm=PStratBot())
-    config.register_player(name="p3", algorithm=PStratBot())
-    config.register_player(name="p4", algorithm=PStratBot())
-    config.register_player(name="p5", algorithm=PStratBot())
+    config.register_player(name="p-1", algorithm=PStratBot())
+    config.register_player(name="p-2", algorithm=PStratBot())
+    config.register_player(name="p-3", algorithm=PStratBot())
+    config.register_player(name="p-4", algorithm=PStratBot())
+    config.register_player(name="p-5", algorithm=PStratBot())
     config.register_player(name="lstm_bot", algorithm=lstm_bot)
     #config.register_player(name="p6", algorithm=CallBot())
     

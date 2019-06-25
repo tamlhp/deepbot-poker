@@ -213,7 +213,20 @@ def comp_last_amount(round_state, my_uuid):
         last_amount = max(my_street_amounts)
     return last_amount
     
+def comp_last_amount_opp(round_state, my_uuid):
+    #print([action for action in round_state['action_histories'][round_state['street']]])
+    my_street_amounts = [action['amount'] for action in round_state['action_histories'][round_state['street']] if action['uuid']==my_uuid and action['action']!='FOLD']
 
+    if len(my_street_amounts)==0:
+        last_amount =0
+    else:
+        #remove last action
+        my_street_amounts=my_street_amounts[:-1]
+        if len(my_street_amounts)==0:
+            last_amount = 0
+        else:
+            last_amount = max(my_street_amounts)
+    return last_amount
     
 def comp_is_BB(round_state, my_uuid):
     is_BB = len([action for action in round_state['action_histories']['preflop'] if action['uuid']==my_uuid and action['action'] == 'BIGBLIND'])>0
