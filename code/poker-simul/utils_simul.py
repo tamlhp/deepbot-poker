@@ -207,7 +207,8 @@ def run_one_game_6max_single(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amou
             ## for each position the hero can find himself
             for ini_hero_pos in range(nb_players_6max):
                 #deck of the match
-                cst_deck_match=cst_decks[int(full_game_id*nb_players_6max+ini_hero_pos)].copy()
+                #cst_deck_match=cst_decks[int(full_game_id*nb_players_6max+ini_hero_pos)].copy()
+                cst_deck_match=cst_decks[full_game_id].copy()
                 opp_id=0
                 config = setup_config(max_round=max_round, initial_stack=ini_stack, small_blind_amount=sb_amount)
                 for i in range(ini_hero_pos):
@@ -230,6 +231,83 @@ def run_one_game_6max_single(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amou
        
         earnings[opp_name] =np.average(my_game_results)
 
+    
+    return earnings
+
+
+
+def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount = 10, opponents = 'default', verbose=False, cst_decks=None):
+    mkl.set_num_threads(1)
+    #ini_stack=ini_stack/nb_sub_matches
+    ## Number of (6) games played vs each opponent:
+    nb_full_games_per_opp = 4
+    ##the SnG blind structure
+    plays_per_blind=90
+    blind_structure={0*plays_per_blind:{'ante':0, 'small_blind':10},\
+                     1*plays_per_blind:{'ante':0, 'small_blind':15},\
+                     2*plays_per_blind:{'ante':0, 'small_blind':25},\
+                     3*plays_per_blind:{'ante':0, 'small_blind':50},\
+                     4*plays_per_blind:{'ante':0, 'small_blind':100},\
+                     5*plays_per_blind:{'ante':25, 'small_blind':100},\
+                     6*plays_per_blind:{'ante':25, 'small_blind':200},\
+                     7*plays_per_blind:{'ante':50, 'small_blind':300},\
+                     8*plays_per_blind:{'ante':50, 'small_blind':400},\
+                     9*plays_per_blind:{'ante':75, 'small_blind':600},\
+            }
+    
+    if opponents == 'default':
+        opp_tables = [[CallBot, CallBot, CallBot, ConservativeBot, PStratBot],
+                      [ConservativeBot, ConservativeBot, ConservativeBot, CallBot, PStratBot],
+                      [ManiacBot, ManiacBot, ManiacBot, ConservativeBot, PStratBot],
+                      [PStratBot, PStratBot, PStratBot, CallBot, ConservativeBot]]
+        opp_names = ['call_bot', 'conservative_bot', 'maniac_bot', 'pstrat_bot']
+    else:
+        opp_algos = opponents['opp_algos']
+        opp_names = opponents['opp_names']
+
+    earnings = OrderedDict()
+    ## for each bot to oppose
+    for table_ind in range(4):
+        lstm_bot.clear_log()        
+        my_game_results = [] # [[-1,]*nb_players_6max,].copy()*nb_full_games_per_opp
+        #config = []#[0,]*nb_players_6max*nb_full_games_per_opp
+        for full_game_id in range(nb_full_games_per_opp):
+            my_game_results.append([-1,]*nb_players_6max)
+            ## for each position the hero can find himself
+            time_1=time.time()
+            for ini_hero_pos in range(nb_players_6max):
+                max_round = nb_hands
+                lstm_bot.model.reset()
+                #deck of the match
+                #cst_deck_match=cst_decks[int(full_game_id*nb_players_6max+ini_hero_pos)].copy()
+                cst_deck_match=cst_decks[int(table_ind*len(opp_names)+full_game_id)].copy()
+                opp_id=1
+                config = setup_config(max_round=max_round, initial_stack=ini_stack, small_blind_amount=sb_amount)
+                for i in range(ini_hero_pos):
+                    config.register_player(name='p-'+str(opp_id), algorithm=opp_tables[table_ind][i]())
+                    opp_id+=1
+                config.register_player(name="lstm_bot", algorithm= lstm_bot)
+                opp_id+=1
+                for i in range(ini_hero_pos,nb_players_6max-1):
+                    config.register_player(name='p-'+str(opp_id), algorithm=opp_tables[table_ind][i]())
+                    opp_id+=1
+                config.set_blind_structure(blind_structure.copy())
+                game_result, last_two_players = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True)
+                
+                if lstm_bot.round_count==max_round:
+                    print('Game could not finish in max number of hands')
+                    my_game_results[full_game_id][ini_hero_pos] = 0
+                else:
+                    if "lstm_bot" in last_two_players:
+                        my_game_results[full_game_id][ini_hero_pos]=1
+                    if game_result['players'][ini_hero_pos]['stack']>0:
+                        my_game_results[full_game_id][ini_hero_pos]=3
+            time_2=time.time()
+            print('Time taken:' +str(time_2-time_1))
+            print('game results' +str(my_game_results))
+       
+        earnings[opp_names[table_ind]] =np.average(my_game_results)
+        print('earnings: '+str(earnings))
     
     return earnings
 

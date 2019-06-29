@@ -166,42 +166,50 @@ def comp_hand_equity(hole_card, community_card, n_act_players, nb_board_cards = 
 
 
 
-def decision_algo(net_output, round_state, valid_actions, i_stack, my_uuid, verbose=False):    
+def decision_algo(net_output, round_state, valid_actions, i_stack, my_uuid, verbose=False, version='default'):    
     #pot = round_state['pot']
     BB = 2*round_state['small_blind_amount']
     #is_BB= comp_is_BB(round_state, my_uuid)
     my_last_amount = comp_last_amount(round_state=round_state,my_uuid=my_uuid)
+    #print('last amonunt: ' + str(my_last_amount))
     y = net_output*i_stack + my_last_amount
-    
+    #print(y)
+
     #tot_pot = get_tot_pot(pot=round_state['pot'])
     call_amount = [action['amount'] for action in valid_actions if action['action']=='call'][0] 
     min_raise = [action['amount']['min'] for action in valid_actions if action['action']=='raise'][0]
-
+    #print(call_amount)
     if min_raise == -1:
         min_raise = math.inf
     #print(y)
     street_was_raised_twice =was_raised_twice(round_state=round_state)
-    if y<call_amount:
-        action, amount = fold_in_limits(valid_actions=valid_actions, round_state = round_state, my_uuid = my_uuid, verbose= False)
-    elif y< min_raise or (street_was_raised_twice and y<(2/3)*i_stack):#max(call_amount+ (1/2)*BB, min_raise):
-        action = 'call'
-        amount= call_amount
-    else:
-        if y>(2/3)*i_stack:
-            action, amount = raise_in_limits(amount=math.inf, valid_actions=valid_actions, verbose=verbose)
+    
+    #### FOR 6MAX SINGLE AND PRE
+    if version=='default':
+        if y<call_amount:
+            action, amount = fold_in_limits(valid_actions=valid_actions, round_state = round_state, my_uuid = my_uuid, verbose= False)
+        elif y< min_raise or (street_was_raised_twice and y<(2/3)*i_stack):#max(call_amount+ (1/2)*BB, min_raise):
+            action = 'call'
+            amount= call_amount
         else:
-            action, amount = raise_in_limits(amount=BB*round(y/BB), valid_actions=valid_actions, verbose=verbose)
+            if y>(2/3)*i_stack:
+                action, amount = raise_in_limits(amount=math.inf, valid_actions=valid_actions, verbose=verbose)
+            else:
+                action, amount = raise_in_limits(amount=BB*round(y/BB), valid_actions=valid_actions, verbose=verbose)
 
-        #alternative, only multiples of 0.5*pot
-        #action, amount = raise_in_limits(call_amount+ 0.5*tot_pot*round((y-call_price)/(0.5*tot_pot)), valid_actions, verbose)
-    """
-    # if wanting to raise by more than 2x tot_pot: go all in
-    max_raise = [action['amount']['max'] for action in valid_actions if action['action']=='raise'][0]
-    if amount >= call_price + 2.5*tot_pot:
-        print(y)
-        print(amount)
-        action, amount = raise_in_limits(max_raise, valid_actions,verbose)
-    """
+    ###FOR 6MAX FULL
+    elif version=='newer':
+        if y>(3/4)*i_stack:
+            action, amount = raise_in_limits(amount=math.inf, valid_actions=valid_actions, verbose=verbose)
+        elif y>min_raise and not(street_was_raised_twice):
+            action, amount = raise_in_limits(amount=BB*round(y/BB), valid_actions=valid_actions, verbose=verbose)
+        elif y>call_amount:
+            action = 'call'
+            amount= call_amount
+        else:
+            action, amount = fold_in_limits(valid_actions=valid_actions, round_state = round_state, my_uuid = my_uuid, verbose= False)
+        
+
     return action, amount
 
 def comp_last_amount(round_state, my_uuid):

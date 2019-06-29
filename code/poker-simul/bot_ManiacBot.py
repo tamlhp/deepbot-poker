@@ -8,10 +8,10 @@ Created on Tue May 28 13:09:35 2019
 
 from pypokerengine.players import BasePokerPlayer
 from utils_bot import was_raised, get_tot_pot, raise_in_limits, comp_last_amount
+import random
 
 class ManiacBot(BasePokerPlayer):  # Do not forget to make parent class as "BasePokerPlayer"
 
- 
     def declare_action(self, valid_actions, hole_card, round_state):
         action = 'raise'
         tot_pot = get_tot_pot(pot = round_state['pot'])
@@ -21,7 +21,8 @@ class ManiacBot(BasePokerPlayer):  # Do not forget to make parent class as "Base
             action, amount = raise_in_limits(call_amount + 2*tot_pot, valid_actions=valid_actions)  
         else:
             action, amount = raise_in_limits(call_amount + tot_pot, valid_actions=valid_actions) 
-            
+        
+        
             
         return action, amount   # action returned here is sent to the poker engine
 

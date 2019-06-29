@@ -48,21 +48,21 @@ class EquityBot(BasePokerPlayer):
 
         amount = None
         # If the win rate is large enough, then raise / call
-        if win_rate > 1/self.num_players:
+        if win_rate > 1/n_act_players:
             tot_pot = get_tot_pot(round_state['pot'])
             #call_price = [action['amount'] for action in valid_actions if action['action']=='call'][0]
             min_raise = [action['amount']['min'] for action in valid_actions if action['action']=='raise'][0]       
-            if win_rate > 1.6/self.num_players:
+            if win_rate > 1.6/n_act_players:
                 # If it is extremely likely to win, then raise as much as possible
                 action = 'raise'
                 amount = call_amount+2*tot_pot#raise_amount_options['max']
                 action, amount = raise_in_limits(amount=amount, valid_actions=valid_actions,verbose=my_verbose)
-            elif win_rate > 1.4/self.num_players:
+            elif win_rate > 1.4/n_act_players:
                 # If it is extremely likely to win, then raise as much as possible
                 action = 'raise'
                 amount = call_amount+tot_pot#raise_amount_options['max']
                 action, amount = raise_in_limits(amount=amount, valid_actions=valid_actions,verbose=my_verbose)
-            elif win_rate > 1.2/self.num_players:
+            elif win_rate > 1.2/n_act_players:
                 # If it is likely to win, then raise by the minimum amount possible
                 action = 'raise'
                 amount = min_raise

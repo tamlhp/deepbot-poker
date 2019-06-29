@@ -127,34 +127,19 @@ def crossover_bots(parent_bots_flat, m_sizes_ref, nb_new_bots):
                 break
         first_parent = parent_bots_flat[first_parent_id]
         second_parent = parent_bots_flat[second_parent_id]
-
-        #deterministic approach, each elite crosses with each other elite
-        """
-        for i in range(len(parent_bots_flat)):
-            for j in range(i+1,len(parent_bots_flat)):
-                first_parent = parent_bots_flat[i]
-                second_parent = parent_bots_flat[j]
-        """
-        
-        #taking even and odd weights
-        #child_flat_params = torch.Tensor([first_parent[k].float() if k%2==0 else second_parent[k].float() for k in range(len(first_parent))])
-        
-        #taking mean weight
-        #child_flat_params = [(first_parent[k] + second_parent[k])/2 for k in range(len(first_parent))]
-        
         
         #taking by layer
-        dict_sizes=get_dict_sizes(m_sizes_ref.state_dict,m_sizes_ref.model.i_opp,m_sizes_ref.model.i_gen)
+        dict_sizes=get_dict_sizes(m_sizes_ref.full_dict)
         i_start=0
         child_flat_params = []
         for layer in sorted(dict_sizes.keys()):
             if layer == 'lin_dec_1.weight':  #special case for very large dense layer
-                for i in range(int(dict_sizes[layer]['numel']/500)): # splitting by groups of 500
+                for i in range(int(dict_sizes[layer]['numel']/200)): # splitting by groups of 200
                     if random.random()<0.5:
-                        child_flat_params= child_flat_params+list(first_parent[i_start:i_start+500])
+                        child_flat_params= child_flat_params+list(first_parent[i_start:i_start+200])
                     else:
-                        child_flat_params = child_flat_params+list(second_parent[i_start:i_start+500])                
-                    i_start+=500
+                        child_flat_params = child_flat_params+list(second_parent[i_start:i_start+200])                
+                    i_start+=200
             else:
                 if random.random()<0.5:
                     child_flat_params= child_flat_params+list(first_parent[i_start:i_start+dict_sizes[layer]['numel']])
@@ -193,10 +178,10 @@ def compute_ANE(all_earnings, BB, nb_bots=50, load = False, gen_dir = None, nb_o
     if normalize==True:
         #set all values to positive
        # earnings_arr = [list(earning) for earning in earnings_arr]   
-        n_j_pos = np.max([BB*np.ones(nb_opps),np.max(earnings_arr,axis=0)], axis=0)
-        n_j_neg = np.max([BB*np.ones(nb_opps),np.abs(np.min(earnings_arr,axis=0))], axis=0)
+        n_j_pos = np.max([0.1*np.ones(nb_opps),np.max(earnings_arr,axis=0)], axis=0)
+        n_j_neg = np.max([0.1*np.ones(nb_opps),np.abs(np.min(earnings_arr,axis=0))], axis=0)
         print('ANEs positive normalization factors: ' +str(n_j_pos))
-        print('ANEs begative normalization factors: ' +str(n_j_neg))
+        print('ANEs negative normalization factors: ' +str(n_j_neg))
         #alternative approach
     
         #use average earnings
@@ -215,7 +200,8 @@ def get_flat_params(full_dict):
     return params
 
 def get_full_dict(all_params, m_sizes_ref):
-    dict_sizes=get_dict_sizes(m_sizes_ref.state_dict,m_sizes_ref.model.i_opp,m_sizes_ref.model.i_gen)
+    #dict_sizes=get_dict_sizes(m_sizes_ref.state_dict,m_sizes_ref.model.i_opp,m_sizes_ref.model.i_gen)
+    dict_sizes=get_dict_sizes(m_sizes_ref.full_dict)
     full_dict = OrderedDict()
     i_start = 0
     for layer in sorted(dict_sizes.keys()):
@@ -224,10 +210,10 @@ def get_full_dict(all_params, m_sizes_ref):
     return full_dict
 
 
-def get_dict_sizes(state_dict, i_opp, i_gen):
+def get_dict_sizes(all_dicts):
     dict_sizes = OrderedDict()
-    all_dicts = state_dict.copy()
-    all_dicts.update(i_opp), all_dicts.update(i_gen)
+    #all_dicts = state_dict.copy()
+    #all_dicts.update(i_opp), all_dicts.update(i_gen)
     for key in all_dicts.keys():
         dict_sizes[key] = {}
         dict_sizes[key]['numel'] = all_dicts[key].numel()

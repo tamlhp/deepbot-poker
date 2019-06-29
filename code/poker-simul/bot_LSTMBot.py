@@ -30,14 +30,6 @@ def reduce_full_dict(full_dict):
     nb_LSTM = 10
     for opp_id in range(1,nb_opps):
         for lstm_id in range(nb_LSTM):
-            full_dict.pop('LSTM_opp_round.'+str(opp_id)+'.'+str(lstm_id)+'.bias_ih_l0',None)
-            full_dict.pop('LSTM_opp_round.'+str(opp_id)+'.'+str(lstm_id)+'.bias_hh_l0',None)
-            full_dict.pop('LSTM_opp_round.'+str(opp_id)+'.'+str(lstm_id)+'.weight_ih_l0',None)
-            full_dict.pop('LSTM_opp_round.'+str(opp_id)+'.'+str(lstm_id)+'.weight_hh_l0',None)
-            full_dict.pop('LSTM_opp_game.'+str(opp_id)+'.'+str(lstm_id)+'.bias_ih_l0',None)
-            full_dict.pop('LSTM_opp_game.'+str(opp_id)+'.'+str(lstm_id)+'.bias_hh_l0',None)
-            full_dict.pop('LSTM_opp_game.'+str(opp_id)+'.'+str(lstm_id)+'.weight_ih_l0',None)
-            full_dict.pop('LSTM_opp_game.'+str(opp_id)+'.'+str(lstm_id)+'.weight_hh_l0',None)
             full_dict.pop('opp_round_h0_'+str(opp_id)+'_'+str(lstm_id),None)
             full_dict.pop('opp_round_c0_'+str(opp_id)+'_'+str(lstm_id),None)
             full_dict.pop('opp_game_h0_'+str(opp_id)+'_'+str(lstm_id),None)
@@ -49,22 +41,14 @@ def extend_full_dict(full_dict):
     nb_LSTM = 10
     for opp_id in range(1,nb_opps):
         for lstm_id in range(nb_LSTM):
-            full_dict.pop('LSTM_opp_round.'+str(opp_id)+'.'+str(lstm_id)+'.bias_ih_l0',None)
-            full_dict.pop('LSTM_opp_round.'+str(opp_id)+'.'+str(lstm_id)+'.bias_hh_l0',None)
-            full_dict.pop('LSTM_opp_round.'+str(opp_id)+'.'+str(lstm_id)+'.weight_ih_l0',None)
-            full_dict.pop('LSTM_opp_round.'+str(opp_id)+'.'+str(lstm_id)+'.weight_hh_l0',None)
-            full_dict.pop('LSTM_opp_game.'+str(opp_id)+'.'+str(lstm_id)+'.bias_ih_l0',None)
-            full_dict.pop('LSTM_opp_game.'+str(opp_id)+'.'+str(lstm_id)+'.bias_hh_l0',None)
-            full_dict.pop('LSTM_opp_game.'+str(opp_id)+'.'+str(lstm_id)+'.weight_ih_l0',None)
-            full_dict.pop('LSTM_opp_game.'+str(opp_id)+'.'+str(lstm_id)+'.weight_hh_l0',None)
-            full_dict.pop('opp_round_h0_'+str(opp_id)+'_'+str(lstm_id),None)
-            full_dict.pop('opp_round_c0_'+str(opp_id)+'_'+str(lstm_id),None)
-            full_dict.pop('opp_game_h0_'+str(opp_id)+'_'+str(lstm_id),None)
-            full_dict.pop('opp_game_c0_'+str(opp_id)+'_'+str(lstm_id),None)
+            full_dict['opp_round_h0_'+str(opp_id)+'_'+str(lstm_id)] = full_dict['opp_round_h0_0_'+str(lstm_id)].clone()
+            full_dict['opp_round_c0_'+str(opp_id)+'_'+str(lstm_id)] = full_dict['opp_round_c0_0_'+str(lstm_id)].clone()
+            full_dict['opp_game_h0_'+str(opp_id)+'_'+str(lstm_id)] = full_dict['opp_game_h0_0_'+str(lstm_id)].clone()
+            full_dict['opp_game_c0_'+str(opp_id)+'_'+str(lstm_id)] = full_dict['opp_game_c0_0_'+str(lstm_id)].clone()
     return full_dict
 
 class LSTMBot(BasePokerPlayer):  
-    def __init__(self, id_=1, gen_dir='./simul_data/simul_0/gen_0', full_dict = None, network='first', input_type='reg', validation_mode=None, validation_id=None):
+    def __init__(self, id_=1, gen_dir='./simul_data/simul_0/gen_0', full_dict = None, network='first', validation_mode=None, validation_id=None):
     
         self.network = network
         if full_dict == None:
@@ -85,10 +69,11 @@ class LSTMBot(BasePokerPlayer):
                 full_dict_=reduce_full_dict(full_dict_)
             self.full_dict = full_dict_
         else:
+            #print(full_dict['opp_game_h0_0_0'])
             self.full_dict= full_dict
             if self.network == '6max_full':
                 full_dict = extend_full_dict(full_dict)
-            self.state_dict, i_opp, i_gen = get_sep_dicts(full_dict)
+            self.state_dict, i_opp, i_gen = get_sep_dicts(full_dict, network=self.network)
             if self.network =='first':
                 self.model = Net(i_opp,i_gen)
             elif self.network =='second':
@@ -103,23 +88,29 @@ class LSTMBot(BasePokerPlayer):
         #if not os.path.exists(self.gen_dir+'/bots/'+str(self.id)):
         #    os.makedirs(self.gen_dir+'/bots/'+str(self.id)) 
         self.opponent = None
-        self.input_type = input_type
         self.num_players = 6
         self.validation_mode = validation_mode
         self.validation_id = validation_id
         self.round_count=0
+        
 
     #  we define the logic to make an action through this method. (so this method would be the core of your AI)
     def declare_action(self, valid_actions, hole_card, round_state):
+        #self.stack=round_state['seats'][round_state['next_player']]['stack']
+        #print(self.stack)
         # valid_actions format => [raise_action_info, call_action_info, fold_action_info]
+        for key in round_state['action_histories'].keys():
+            round_state['action_histories'][key] = [action for action in round_state['action_histories'][key] if action['action']!='ANTE']
         self.new_round_handle(round_state)
-        input_tensor = self.prep_input(hole_card, round_state, valid_actions, input_type=self.input_type)
+        input_tensor = self.prep_input(hole_card, round_state, valid_actions, network=self.network)
         #print('input tensor: '+str(input_tensor))
         net_output = self.net_predict(input_tensor)
         #print('net output: ' +str(net_output))
-            
+        version='default'
+        if self.network=='6max_full':
+            version='newer'
         action, amount = decision_algo(net_output=net_output, round_state=round_state, valid_actions = valid_actions,
-                                       i_stack = self.i_stack, my_uuid = self.uuid, verbose = my_verbose_upper)
+                                       i_stack = self.i_stack, my_uuid = self.uuid, verbose = my_verbose_upper, version=version)
 
         if write_details:
             write_declare_action_state(action_id = self.action_id, round_id = self.round_id, valid_actions = valid_actions,
@@ -136,9 +127,11 @@ class LSTMBot(BasePokerPlayer):
             action, amount = 'fold',0
 
             
-        if random.random() < 0:
+        if  net_output>0:#random.random() < 0: #
             print('\n LSTM')
-            print('net input: ' +str(input_tensor))
+            #print('net input: ' +str(input_tensor))
+            print('at round: ' +str(self.round_count))
+            print('Stack: ' +str(round_state['seats'][round_state['next_player']]['stack']))
             print_cards(hole_card = hole_card, round_state=round_state)
             print_state(net_output=net_output, action=action, amount=amount)
         
@@ -213,9 +206,9 @@ class LSTMBot(BasePokerPlayer):
             self.model.reset_u_gen()
         return
     
-    def prep_input(self, hole_card, round_state, valid_actions, input_type = 'reg'):
+    def prep_input(self, hole_card, round_state, valid_actions, network = 'first'):
         
-        if input_type =='reg':
+        if network =='first' or  network=='second':
             n_act_players = comp_n_act_players(round_state)
             
             input_size = 8
@@ -250,7 +243,7 @@ class LSTMBot(BasePokerPlayer):
             call_price = call_amount-my_last_amount
             inputs[7] = call_price/(call_price+tot_pot)
         
-        elif input_type.split('_')[0] == 'pstratstyle':
+        elif network.split('_')[0] == '6max':
             n_act_players = comp_n_act_players(round_state)
             
             input_size = 12
@@ -275,12 +268,20 @@ class LSTMBot(BasePokerPlayer):
             inputs[5] = players_participating_after_hero/self.num_players
             
             #setting hand equity
-            inputs[6] = comp_hand_equity(hole_card = hole_card, community_card = round_state['community_card'], n_act_players = n_act_players)
+            if len(network.split('_'))>1:
+                if network.split('_')[1] == 'full':
+                   inputs[6] = n_act_players*comp_hand_equity(hole_card = hole_card, community_card = round_state['community_card'], n_act_players = n_act_players)
+            else:
+                inputs[6] = comp_hand_equity(hole_card = hole_card, community_card = round_state['community_card'], n_act_players = n_act_players)
             
             ##setting my equity on flop
             nb_flop_cards = 3
             if street_ind<=1:
-                inputs[7] = comp_hand_equity(hole_card = hole_card, community_card = round_state['community_card'], n_act_players = n_act_players, nb_board_cards = nb_flop_cards)
+                if len(network.split('_'))>1:
+                    if network.split('_')[1] == 'full':
+                        inputs[7] = n_act_players*comp_hand_equity(hole_card = hole_card, community_card = round_state['community_card'], n_act_players = n_act_players, nb_board_cards = nb_flop_cards)
+                else:
+                    inputs[7] = comp_hand_equity(hole_card = hole_card, community_card = round_state['community_card'], n_act_players = n_act_players, nb_board_cards = nb_flop_cards)
             else: #if on turn or river
                 inputs[7]=0
             ## wether the street is raised
@@ -304,44 +305,85 @@ class LSTMBot(BasePokerPlayer):
             
             
             #print(inputs)
-            if len(input_type.split('_'))>1:
-                if input_type.split('_')[1] == '6max':
-                    nb_opps=5
-                    nb_feats=5
-                    opp_ids = [1,2,3,4,5,6]
-                    opp_ids.remove(int(self.uuid.split('-')[1]))
-                    opp_input_size=nb_opps*nb_feats
-                    opp_inputs=[0,]*opp_input_size
-                    nb_folded_since=0
-                    for i in range(nb_opps):
-                        opp_last_amount= comp_last_amount_opp(round_state=round_state,my_uuid='uuid-'+str(opp_ids[i]))
-                        for player in round_state['seats']:
-                            if player['name']=='p-'+str(opp_ids[i]):
-                                #setting active / unactive bit
-                                opp_inputs[0+i*nb_feats]= not(player['state']=='folded')*1
-                                ###opponents stack
-                                opp_inputs[1+i*nb_feats]=player['stack']/self.i_stack
-                                break
-                                
-                        for k, action in enumerate(round_state['action_histories'][round_state['street']][::-1]):
-                            if action['uuid']==self.uuid:
-                                break
-                            elif action['uuid']=='uuid-'+str(opp_ids[i]):
-                                street_amount = max([action['amount'] for action in round_state['action_histories'][round_state['street']][::-1][(k+1):] if action['action']!='FOLD']+[0])
-                                if action['action']=='FOLD':
-                                    amount=0
-                                else:
-                                    amount=action['amount']
-                                #opponents paid amount
-                                opp_inputs[2+i*nb_feats]=(amount-opp_last_amount)/self.i_stack
-                                #opponents faced call price
-                                opp_inputs[3+i*nb_feats]=(street_amount-opp_last_amount)/self.i_stack
-                                nb_folded_since= sum([action['action']=='FOLD' for action in round_state['action_histories'][round_state['street']][::-1][:k]])
-                                break
-                        #nb opponent players
-                        opp_inputs[4+i*nb_feats]= (n_act_players-1+nb_folded_since)/self.num_players
-                    inputs=inputs+opp_inputs
-        #print(len(inputs))
+            if len(network.split('_'))>1:
+                if True:
+                    #NEW VERSION#
+                    if network.split('_')[1] == 'full':
+                        nb_opps=5
+                        nb_feats=5
+                        opp_ids = [1,2,3,4,5,6]
+                        opp_ids.remove(int(self.uuid.split('-')[1]))
+                        opp_input_size=nb_opps*nb_feats
+                        opp_inputs=[0,]*opp_input_size
+                        for i in range(nb_opps):
+                            opp_last_amount= comp_last_amount_opp(round_state=round_state,my_uuid='uuid-'+str(opp_ids[i]))
+                            for player in round_state['seats']:
+                                if player['name']=='p-'+str(opp_ids[i]):
+                                    #setting active / unactive bit
+                                    opp_inputs[0+i*nb_feats]= not(player['state']=='folded')*1
+                                    break
+                                    
+                            for k, action in enumerate(round_state['action_histories'][round_state['street']][::-1]):
+                                if action['uuid']==self.uuid:
+                                    break
+                                elif action['uuid']=='uuid-'+str(opp_ids[i]):
+                                    if action['action']=='FOLD':
+                                        amount=0
+                                    else:
+                                        amount=action['amount']
+                                    #opponents paid amount
+                                    if action['action'] not in ['SMALLBLIND','BIGBLIND']:
+                                        opp_inputs[1+i*nb_feats]=(amount-opp_last_amount)/self.i_stack           
+                                    if action['action']=='RAISE':
+                                        opp_inputs[2+i*nb_feats]=1
+                                    elif action['action']=='CALL':
+                                        opp_inputs[3+i*nb_feats]=1
+                                    elif action['action']=='FOLD':
+                                        opp_inputs[4+i*nb_feats]=1
+                                    break
+                        inputs=inputs+opp_inputs
+                
+                else:
+                #OLD VERSION#
+                    if network.split('_')[1] == 'full':
+                        nb_opps=5
+                        nb_feats=5
+                        opp_ids = [1,2,3,4,5,6]
+                        opp_ids.remove(int(self.uuid.split('-')[1]))
+                        opp_input_size=nb_opps*nb_feats
+                        opp_inputs=[0,]*opp_input_size
+                        nb_folded_since=0
+                        for i in range(nb_opps):
+                            opp_last_amount= comp_last_amount_opp(round_state=round_state,my_uuid='uuid-'+str(opp_ids[i]))
+                            for player in round_state['seats']:
+                                if player['name']=='p-'+str(opp_ids[i]):
+                                    #setting active / unactive bit
+                                    opp_inputs[0+i*nb_feats]= not(player['state']=='folded')*1
+                                    ###opponents stack
+                                    opp_inputs[1+i*nb_feats]=player['stack']/self.i_stack
+                                    break
+                                    
+                            for k, action in enumerate(round_state['action_histories'][round_state['street']][::-1]):
+                                if action['uuid']==self.uuid:
+                                    break
+                                elif action['uuid']=='uuid-'+str(opp_ids[i]):
+                                    street_amount = max([action['amount'] for action in round_state['action_histories'][round_state['street']][::-1][(k+1):] if action['action']!='FOLD']+[0])
+                                    if action['action']=='FOLD':
+                                        amount=0
+                                    else:
+                                        amount=action['amount']
+                                    #opponents paid amount
+                                    opp_inputs[2+i*nb_feats]=(amount-opp_last_amount)/self.i_stack
+                                    #opponents faced call price
+                                    opp_inputs[3+i*nb_feats]=(street_amount-opp_last_amount)/self.i_stack
+                                    nb_folded_since= sum([action['action']=='FOLD' for action in round_state['action_histories'][round_state['street']][::-1][:k+1]])
+                                    break
+                            #nb opponent players
+                            if opp_inputs[0+i*nb_feats]==1:
+                                opp_inputs[4+i*nb_feats]= (n_act_players-1+nb_folded_since)/self.num_players
+                        inputs=inputs+opp_inputs
+                    
+                    
         return torch.Tensor(inputs).view(1, 1, -1)
  
     
@@ -367,13 +409,17 @@ class LSTMBot(BasePokerPlayer):
         return pos_group
 
     
-def get_sep_dicts(full_dict):
+def get_sep_dicts(full_dict, network=None):
     state_dict = OrderedDict()
     i_opp = OrderedDict()
     i_gen = OrderedDict()
     for layer in sorted(full_dict.keys()):
-        pattern_opp = re.compile('opp_')
-        pattern_gen = re.compile('gen_')
+        if network=='6max_full':
+            pattern_opp=re.compile('opp_round')
+            pattern_gen=re.compile('gen_|opp_game')
+        else:
+            pattern_opp = re.compile('opp_')
+            pattern_gen = re.compile('gen_')
         if pattern_opp.match(layer):
             i_opp[layer] = full_dict[layer]
         elif pattern_gen.match(layer): 

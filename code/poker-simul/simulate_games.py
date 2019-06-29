@@ -8,7 +8,7 @@ Created on Tue May 28 12:12:27 2019
 import sys
 sys.path.append('../redis-server/')
 
-from utils_simul import gen_rand_bots, gen_decks, FakeJob, run_one_game_reg, run_one_game_rebuys, run_one_game_6max_single
+from utils_simul import gen_rand_bots, gen_decks, FakeJob, run_one_game_reg, run_one_game_rebuys, run_one_game_6max_single, run_one_game_6max_full
 from neuroevolution import select_next_gen_bots, get_best_ANE_earnings, get_full_dict
 import pickle
 import time
@@ -28,12 +28,13 @@ from operator import add
 
             #######
             
-my_game_mode = '6max'
-my_network='6max_single'
-my_input_type='pstratstyle'
-nb_opps=1
-my_normalize=False
-my_nb_decks=24
+
+my_network='6max_full'
+nb_opps=4
+my_normalize=True
+my_nb_decks=4*4
+
+my_timeout=800
 
 machine='ec2'
 
@@ -46,7 +47,7 @@ elif machine=='ec2':
 if __name__ == '__main__':
     #start redis and clear queue
     redis = Redis(REDIS_HOST)
-    q = Queue(connection=redis)              # start 4 worker processes
+    q = Queue(connection=redis, default_timeout=my_timeout)             # start 4 worker processes
     for j in q.jobs:
         j.cancel()
     
@@ -54,28 +55,28 @@ if __name__ == '__main__':
     lstm_ref = LSTMBot(network=my_network)
     #log dir path
     log_dir = './simul_data'
-    simul_id = 9 ## simul id
+    simul_id = 13 ## simul id
     
 
     
     ###CONSTANTS
     nb_bots= 70
-    nb_hands = 500
+    nb_hands = 300
     sb_amount = 10
     ini_stack = 1500
     nb_generations = 250
-    nb_sub_matches=10
+    #nb_sub_matches=10
     
     print('## Starting ##')
     ## prepare first gen lstm bots
     gen_rand_bots(simul_id = simul_id, gen_id=0, log_dir=log_dir, nb_bots = nb_bots, overwrite=False, 
                   network=my_network)
           
-    for gen_id in range(0, 250):
+    for gen_id in range(250, 300):
         print('\n Starting generation: ' + str(gen_id))
         jobs = []
         #prepare generation deck
-        if my_game_mode=='6max':
+        if my_network=='6max_single' or my_network=='6max_full':
             gen_decks(simul_id=simul_id,gen_id=gen_id, log_dir=log_dir, overwrite=False, nb_hands=nb_hands, nb_decks=my_nb_decks)            
         else:
             gen_decks(simul_id=simul_id,gen_id=gen_id, log_dir=log_dir, overwrite=False, nb_hands=nb_hands)
@@ -90,10 +91,12 @@ if __name__ == '__main__':
                 lstm_bot_flat = pickle.load(f)
                 lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
                 lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, 
-                                   network=my_network, input_type=my_input_type)
+                                   network=my_network)
             try:
-                if my_game_mode=='6max':
+                if my_network=='6max_single':
                     jobs.append(q.enqueue(run_one_game_6max_single, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)))
+                elif my_network=='6max_full':
+                    jobs.append(q.enqueue(run_one_game_6max_full, timeout=my_timeout, result_ttl=my_timeout, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)))
                 else:
                     jobs.append(q.enqueue(run_one_game_rebuys, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)))
             except ConnectionError:
@@ -111,17 +114,20 @@ if __name__ == '__main__':
                     jobs[i] = FakeJob(jobs[i])
             
             all_earnings = [j.result for j in jobs]
+            time.sleep(1)
             if None not in all_earnings: ###ALL JOBS ARE DONE
                 break
             
-            if time.time() - last_enqueue_time > 180:
+            if time.time() - last_enqueue_time > my_timeout:
                 print('Reenqueuing unfinished jobs '+ str({sum(x is None for x in all_earnings)}))
                 for i in range(len(jobs)):
                     if jobs[i].result is None:
                         try:
                             jobs[i].cancel()
-                            if my_game_mode=='6max':
+                            if my_network=='6max_single':
                                 jobs[i] = q.enqueue(run_one_game_6max_single, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks))
+                            elif my_network=='6max_full':
+                                jobs.append(q.enqueue(run_one_game_6max_full, timeout=my_timeout, result_ttl=my_timeout, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)))
                             else:
                                 jobs[i] = q.enqueue(run_one_game_rebuys, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks))
                         except ConnectionError:

@@ -22,11 +22,12 @@ import time
 import pickle
 from utils_simul import gen_decks, gen_rand_bots, run_one_game_rebuys
 from functools import reduce
-from neuroevolution import get_full_dict
+from neuroevolution import get_full_dict, mutate_bots
 import random
+import numpy as np
 
 nb_cards = 52
-nb_hands = 5
+nb_hands = 250
 
 ###CONSTANTS
 nb_bots= 1
@@ -65,14 +66,14 @@ print(earnings)
 
 bot_id = 1
 gen_dir='./simul_data/simul_0/gen_0'
-backed_gen_dir = '../../../backed_simuls/simul_8/gen_20'
+backed_gen_dir = '../../../backed_simuls/simul_10/gen_298'
 
 ## prepare first gen lstm bots and decks
 #gen_rand_bots(simul_id = simul_id, gen_id=0, log_dir=log_dir, nb_bots = nb_bots)
 #gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = 500)
 
 
-
+"""
 #backed_gen_dir= './simul_data/simul_5/gen_1'
 with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:  
     lstm_bot_flat = pickle.load(f)
@@ -93,7 +94,7 @@ lstm_bot.model.reset()
 while True:
     #print(len(cst_deck_match))
     config = setup_config(max_round=max_round, initial_stack=ini_stack, small_blind_amount=sb_amount)
-    config.register_player(name='callbot', algorithm=CallBot())
+    config.register_player(name='p-5', algorithm=CallBot())
     config.register_player(name="lstm_bot", algorithm= lstm_bot)
     game_result_1 = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match)
     ##Fixing issue with missing last SB in certain wins
@@ -108,9 +109,10 @@ print(my_game_result_1)
 """
 bot_id = 1
 gen_dir='./simul_data/simul_0/gen_0'
-backed_gen_dir = '../../../backed_simuls/simul_9/gen_290'
-my_network = '6max_single'
-my_input_type = 'pstratstyle'
+backed_gen_dir = '../../../backed_simuls/simul_13/gen_250'
+my_network = '6max_full'
+
+
 
 log_dir = './simul_data'
 gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = 500, overwrite=True)
@@ -120,17 +122,30 @@ with open(gen_dir+'/cst_decks.pkl', 'rb') as f:
     cst_decks = pickle.load(f)
 with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:  
     lstm_bot_flat = pickle.load(f)
+    #lstm_bot_flat = mutate_bots(orig_bots_flat=[lstm_bot_flat], nb_new_bots=1, 
+    #                                      mut_rate=0.1, mut_strength=0.18)[0]
     lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
-    lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network, input_type=my_input_type)
+    lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
+    lstm_bot_2 = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
+    lstm_bot_3 = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
+    lstm_bot_4 = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
+    lstm_bot_5 = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
+    lstm_bot_6 = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
 
+#chosenBot=ManiacBot
 
+opp_tables = [[CallBot, CallBot, CallBot, ConservativeBot, PStratBot],
+              [ConservativeBot, ConservativeBot, ConservativeBot, CallBot, PStratBot],
+              [ManiacBot, ManiacBot, ManiacBot, ConservativeBot, PStratBot],
+              [PStratBot, PStratBot, PStratBot, CallBot, ConservativeBot],
+              [ManiacBot, ManiacBot, ManiacBot, ManiacBot, ManiacBot]]
+opp_names = ['call_bot', 'conservative_bot', 'maniac_bot', 'pstrat_bot']
+
+table_ind=4
 
 config = setup_config(max_round=nb_hands, initial_stack=1500, small_blind_amount=10)
-config.register_player(name="p1", algorithm=PStratBot())
-config.register_player(name="p2", algorithm=PStratBot())
-config.register_player(name="p3", algorithm=PStratBot())
-config.register_player(name="p4", algorithm=PStratBot())
-config.register_player(name="p5", algorithm=PStratBot())
+for ind in range(5):
+    config.register_player(name="p-"+str(ind+1), algorithm=opp_tables[table_ind][ind]())
 config.register_player(name="lstm_bot", algorithm=lstm_bot)
 #config.register_player(name="p6", algorithm=CallBot())
 
@@ -148,17 +163,20 @@ blind_structure={0*plays_per_blind:{'ante':0, 'small_blind':10},\
         }
 config.set_blind_structure(blind_structure)
 
-game_result, last_two_players = start_poker(config, verbose=0, cheat = True,cst_deck_ids = cst_decks.copy())
+game_result, last_two_players = start_poker(config, verbose=0, cheat = True,cst_deck_ids = cst_decks.copy(), return_last_two =True)
 time_2 = time.time()
+print(game_result)
 #print(str(time_2-time_1))
 my_game_results=-1
 if lstm_bot.round_count==nb_hands:
     print('Game could not finish in max number of hands')
-    my_game_results = 0
+    my_game_results = -1
 else:
     if "lstm_bot" in last_two_players:
         my_game_results=1
     if game_result['players'][5]['stack']>0:
         my_game_results=3
+print(last_two_players)
 print(my_game_results)
-"""
+
+#print(lstm_bot.full_dict)
