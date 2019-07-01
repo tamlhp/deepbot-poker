@@ -95,9 +95,9 @@ if __name__ == '__main__':
         
     if my_network=='6max_single':
         
-        nb_decks = 4
+        nb_decks = 8
         jobs = []
-        for run_id in range(0,100):
+        for run_id in range(0,4):
             with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:  
                 lstm_bot_flat = pickle.load(f)
                 lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
@@ -108,7 +108,7 @@ if __name__ == '__main__':
             with open(gen_dir+'/cst_decks.pkl', 'rb') as f:  
                 cst_decks = pickle.load(f)
             cst_decks_match = cst_decks.copy()
-            jobs.append(q.enqueue(run_one_game_6max_single, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)))
+            jobs.append(q.enqueue(run_one_game_6max_single, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks, is_validation=True)))
                                                       
             
         while(True):
@@ -120,13 +120,13 @@ if __name__ == '__main__':
             if None not in all_earnings: ###ALL JOBS ARE DONE
                 break
             print(sum(np.array(all_earnings)==None))
-            time.sleep(20)
+            time.sleep(5)
 
         
         with open(log_dir+'/simul_'+str(simul_id)+'/bot_earnings.pkl', 'wb') as f:  
             pickle.dump(all_earnings, f)
         
-        avg_earning = np.average([list(all_earnings[i].values()) for i in range(len(all_earnings))],axis=0)
-        print(avg_earning)
+        #avg_earning = np.average([list(all_earnings[i].values()) for i in range(len(all_earnings))],axis=0)
+        #print(avg_earning)
 
         

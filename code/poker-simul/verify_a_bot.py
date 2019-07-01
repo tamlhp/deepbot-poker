@@ -64,9 +64,9 @@ print(earnings)
 """
 
 
-bot_id = 1
-gen_dir='./simul_data/simul_0/gen_0'
-backed_gen_dir = '../../../backed_simuls/simul_10/gen_298'
+#bot_id = 1
+#gen_dir='./simul_data/simul_0/gen_0'
+#backed_gen_dir = '../../../backed_simuls/simul_10/gen_298'
 
 ## prepare first gen lstm bots and decks
 #gen_rand_bots(simul_id = simul_id, gen_id=0, log_dir=log_dir, nb_bots = nb_bots)
@@ -109,8 +109,8 @@ print(my_game_result_1)
 """
 bot_id = 1
 gen_dir='./simul_data/simul_0/gen_0'
-backed_gen_dir = '../../../backed_simuls/simul_13/gen_250'
-my_network = '6max_full'
+backed_gen_dir = '../../../backed_simuls/simul_9/gen_300'
+my_network = '6max_single'
 
 
 
@@ -138,7 +138,7 @@ opp_tables = [[CallBot, CallBot, CallBot, ConservativeBot, PStratBot],
               [ConservativeBot, ConservativeBot, ConservativeBot, CallBot, PStratBot],
               [ManiacBot, ManiacBot, ManiacBot, ConservativeBot, PStratBot],
               [PStratBot, PStratBot, PStratBot, CallBot, ConservativeBot],
-              [ManiacBot, ManiacBot, ManiacBot, ManiacBot, ManiacBot]]
+              [PStratBot, PStratBot, PStratBot, PStratBot, PStratBot]]
 opp_names = ['call_bot', 'conservative_bot', 'maniac_bot', 'pstrat_bot']
 
 table_ind=4
@@ -163,7 +163,7 @@ blind_structure={0*plays_per_blind:{'ante':0, 'small_blind':10},\
         }
 config.set_blind_structure(blind_structure)
 
-game_result, last_two_players = start_poker(config, verbose=0, cheat = True,cst_deck_ids = cst_decks.copy(), return_last_two =True)
+game_result, last_two_players, lstm_rank = start_poker(config, verbose=0, cheat = True,cst_deck_ids = cst_decks.copy(), return_last_two =True, return_lstm_rank = True)
 time_2 = time.time()
 print(game_result)
 #print(str(time_2-time_1))
@@ -177,6 +177,7 @@ else:
     if game_result['players'][5]['stack']>0:
         my_game_results=3
 print(last_two_players)
+print(lstm_rank)
 print(my_game_results)
 
 #print(lstm_bot.full_dict)

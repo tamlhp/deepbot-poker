@@ -99,8 +99,9 @@ class LSTMBot(BasePokerPlayer):
         #self.stack=round_state['seats'][round_state['next_player']]['stack']
         #print(self.stack)
         # valid_actions format => [raise_action_info, call_action_info, fold_action_info]
-        for key in round_state['action_histories'].keys():
-            round_state['action_histories'][key] = [action for action in round_state['action_histories'][key] if action['action']!='ANTE']
+        if self.network == '6max_full':
+            for key in round_state['action_histories'].keys():
+                round_state['action_histories'][key] = [action for action in round_state['action_histories'][key] if action['action']!='ANTE']
         self.new_round_handle(round_state)
         input_tensor = self.prep_input(hole_card, round_state, valid_actions, network=self.network)
         #print('input tensor: '+str(input_tensor))
@@ -127,11 +128,12 @@ class LSTMBot(BasePokerPlayer):
             action, amount = 'fold',0
 
             
-        if  net_output>0:#random.random() < 0: #
+        if  random.random() < 1: #net_output>0:#
             print('\n LSTM')
-            #print('net input: ' +str(input_tensor))
+            print('net input: ' +str(input_tensor))
             print('at round: ' +str(self.round_count))
             print('Stack: ' +str(round_state['seats'][round_state['next_player']]['stack']))
+            print('at blind: '+str(round_state['small_blind_amount']))
             print_cards(hole_card = hole_card, round_state=round_state)
             print_state(net_output=net_output, action=action, amount=amount)
         
@@ -174,6 +176,8 @@ class LSTMBot(BasePokerPlayer):
             i_opp_keys = ['opp_h0_'+str(i) for i in range(10)]+['opp_c0_'+str(i) for i in range(10)]
             for key in i_opp_keys:
                 i_opp[key]=torch.randn(10).view(1,1,10)
+        elif self.network=='6max_single':
+            pass
         elif self.network=='6max_full':
             i_opp_keys=[]
             for opp_id in range(5):
@@ -241,7 +245,8 @@ class LSTMBot(BasePokerPlayer):
             call_amount = [action['amount'] for action in valid_actions if action['action']=='call'][0]
             my_last_amount= comp_last_amount(round_state=round_state, my_uuid=self.uuid)
             call_price = call_amount-my_last_amount
-            inputs[7] = call_price/(call_price+tot_pot)
+            #inputs[7] = call_price/(call_price+tot_pot) #VERIFY WHICH WAS USED
+            inputs[7] = call_amount/(call_amount+tot_pot)
         
         elif network.split('_')[0] == '6max':
             n_act_players = comp_n_act_players(round_state)
@@ -269,10 +274,11 @@ class LSTMBot(BasePokerPlayer):
             
             #setting hand equity
             if len(network.split('_'))>1:
-                if network.split('_')[1] == 'full':
-                   inputs[6] = n_act_players*comp_hand_equity(hole_card = hole_card, community_card = round_state['community_card'], n_act_players = n_act_players)
-            else:
-                inputs[6] = comp_hand_equity(hole_card = hole_card, community_card = round_state['community_card'], n_act_players = n_act_players)
+                if network.split('_')[1] == 'full':                  
+                    inputs[6] = n_act_players*comp_hand_equity(hole_card = hole_card, community_card = round_state['community_card'], n_act_players = n_act_players)
+                elif network.split('_')[1] == 'single':  
+                    inputs[6] = comp_hand_equity(hole_card = hole_card, community_card = round_state['community_card'], n_act_players = n_act_players)
+
             
             ##setting my equity on flop
             nb_flop_cards = 3
@@ -280,8 +286,9 @@ class LSTMBot(BasePokerPlayer):
                 if len(network.split('_'))>1:
                     if network.split('_')[1] == 'full':
                         inputs[7] = n_act_players*comp_hand_equity(hole_card = hole_card, community_card = round_state['community_card'], n_act_players = n_act_players, nb_board_cards = nb_flop_cards)
-                else:
-                    inputs[7] = comp_hand_equity(hole_card = hole_card, community_card = round_state['community_card'], n_act_players = n_act_players, nb_board_cards = nb_flop_cards)
+                    elif network.split('_')[1] == 'single': 
+                        inputs[7] = comp_hand_equity(hole_card = hole_card, community_card = round_state['community_card'], n_act_players = n_act_players, nb_board_cards = nb_flop_cards)
+
             else: #if on turn or river
                 inputs[7]=0
             ## wether the street is raised
