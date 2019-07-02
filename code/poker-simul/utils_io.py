@@ -12,15 +12,20 @@ import torch
 import re
 import os
 import pickle
+from functools import reduce
 
-def write_declare_action_state(action_id, round_id, valid_actions, hole_card, round_state, strat, action, amount, csv_file = './test_declare_action.csv'):
-    state_row = [{'round_id': round_id, 'action_id': action_id, 'hole_card':hole_card, 'valid_actions':valid_actions, 
-                  'round_state':round_state, 'strat':strat, 'action':action, 'amount':amount}]
-    with open(csv_file,'a') as hand_data_csv:
-        f_csv = csv.DictWriter(hand_data_csv, ['round_id','action_id','hole_card','valid_actions','round_state','strat','action','amount'])
-        
-        if(action_id==0):
+def write_declare_action_state(round_id, action_id, net_input, net_output, action, amount, csv_file = './test_declare_action.csv'):
+    net_input_cust=list(float(net_input[0][0][i]) for i in range(len(net_input[0][0])))
+    #print(list(net_input)[0][0])
+    state_row = [{'round_id': round_id, 'action_id': action_id, 'net_input':net_input_cust, 'net_output':net_output, 'action':action, 'amount':amount}]
+    csv_path = reduce(lambda x,y :x+'/'+y, csv_file.split('/')[:-1])
+    if not os.path.exists(csv_path):
+        os.makedirs(csv_path) 
+        with open(csv_file,'a') as hand_data_csv:
+            f_csv = csv.DictWriter(hand_data_csv, ['round_id', 'action_id', 'net_input','net_output','action','amount'])
             f_csv.writeheader()
+    with open(csv_file,'a') as hand_data_csv:
+        f_csv = csv.DictWriter(hand_data_csv, ['round_id', 'action_id', 'net_input','net_output','action','amount'])
         f_csv.writerows(state_row)
     return
 

@@ -72,7 +72,7 @@ if __name__ == '__main__':
     gen_rand_bots(simul_id = simul_id, gen_id=0, log_dir=log_dir, nb_bots = nb_bots, overwrite=False, 
                   network=my_network)
           
-    for gen_id in range(250, 300):
+    for gen_id in range(0, 250):
         print('\n Starting generation: ' + str(gen_id))
         jobs = []
         #prepare generation deck

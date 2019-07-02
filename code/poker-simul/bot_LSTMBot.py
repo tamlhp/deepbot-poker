@@ -21,7 +21,6 @@ from utils_io import write_declare_action_state, write_round_start_state, write_
 import pickle
 
 my_verbose_upper = False
-write_details = False
 
 from networks import Net, Net_2, Net_6maxSingle, Net_6maxFull
     
@@ -48,7 +47,7 @@ def extend_full_dict(full_dict):
     return full_dict
 
 class LSTMBot(BasePokerPlayer):  
-    def __init__(self, id_=1, gen_dir='./simul_data/simul_0/gen_0', full_dict = None, network='first', validation_mode=None, validation_id=None):
+    def __init__(self, id_=1, gen_dir='./simul_data/simul_0/gen_0', full_dict = None, network='first', validation_mode=None, validation_id=None, write_details=False):
     
         self.network = network
         if full_dict == None:
@@ -92,6 +91,8 @@ class LSTMBot(BasePokerPlayer):
         self.validation_mode = validation_mode
         self.validation_id = validation_id
         self.round_count=0
+        self.action_id=1
+        self.write_details = write_details
         
 
     #  we define the logic to make an action through this method. (so this method would be the core of your AI)
@@ -113,10 +114,9 @@ class LSTMBot(BasePokerPlayer):
         action, amount = decision_algo(net_output=net_output, round_state=round_state, valid_actions = valid_actions,
                                        i_stack = self.i_stack, my_uuid = self.uuid, verbose = my_verbose_upper, version=version)
 
-        if write_details:
-            write_declare_action_state(action_id = self.action_id, round_id = self.round_id, valid_actions = valid_actions,
-                               hole_card = hole_card, round_state = round_state, strat=None, action=action, amount = amount,
-                               csv_file = self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_declare_action_state.csv')
+        if self.write_details:
+            write_declare_action_state(round_id = self.round_count, action_id = self.action_id, net_input=input_tensor, net_output=net_output, action=action, amount = amount,
+                               csv_file = self.gen_dir+'/analysis_data/'+str(self.id)+'/declare_action_state.csv')
             self.action_id+=1
         if self.validation_mode == "mutation_variance":
             with open(self.gen_dir+'/outputs_'+str(self.validation_id)+'.pkl', 'ab') as f:  
@@ -126,9 +126,12 @@ class LSTMBot(BasePokerPlayer):
             with open(self.gen_dir+'/outputs_'+str(self.validation_id)+'.pkl', 'ab') as f:  
                 pickle.dump(net_output, f, protocol=0)
             action, amount = 'fold',0
+        #if self.validation_mode=='game':
+        #    with open(self.gen_dir+'/outputs_'+str(self.validation_id)+'.pkl', 'ab') as f:  
+        #        pickle.dump(net_output, f, protocol=0)
 
             
-        if  random.random() < 1: #net_output>0:#
+        if  random.random() < 0: #net_output>0:#
             print('\n LSTM')
             print('net input: ' +str(input_tensor))
             print('at round: ' +str(self.round_count))
@@ -141,14 +144,14 @@ class LSTMBot(BasePokerPlayer):
 
     def receive_game_start_message(self, game_info):
         self.i_stack = game_info['rule']['initial_stack']
-        if write_details:
+        if self.write_details and False:
             self.action_id = find_action_id(csv_file = self.gen_dir+'/bots/'+str(id)+'/'+str(self.opponent)+'_declare_action_state.csv')
             self.round_id = find_round_id(csv_file = self.gen_dir+'/bots/'+str(id)+'/'+str(self.opponent)+'_round_result_state.csv')
         pass
 
     def receive_round_start_message(self, round_count, hole_card, seats):
         self.round_count = round_count
-        if write_details:
+        if self.write_details and False:
             write_round_start_state(round_id = self.round_id, seats = seats, csv_file = self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_round_start_state.csv')
         pass
 
@@ -159,7 +162,7 @@ class LSTMBot(BasePokerPlayer):
         pass
 
     def receive_round_result_message(self, winners, hand_info, round_state):
-        if write_details:
+        if self.write_details and False:
             write_round_result_state(round_id = self.round_id, winners = winners,
                              hand_info = hand_info, round_state = round_state, csv_file = self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_round_result_state.csv')
             self.round_id+=1
@@ -302,6 +305,7 @@ class LSTMBot(BasePokerPlayer):
             my_last_amount= comp_last_amount(round_state=round_state, my_uuid=self.uuid)
             call_price = call_amount-my_last_amount
             inputs[9] = call_price/self.i_stack
+            
             
             # total pot
             tot_pot = get_tot_pot(round_state['pot'])

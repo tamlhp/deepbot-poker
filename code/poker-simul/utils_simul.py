@@ -222,7 +222,11 @@ def run_one_game_6max_single(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amou
                 for i in range(nb_players_6max-ini_hero_pos-1):
                     config.register_player(name=lstm_bot.opponent+str(opp_id), algorithm=opp_algo())
                 config.set_blind_structure(blind_structure.copy())
-                game_result, last_two_players, lstm_rank = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True, return_lstm_rank=True)
+                if is_validation:
+                    game_result, last_two_players, lstm_rank = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True, return_lstm_rank=True)
+                else:
+                    game_result, last_two_players = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True)
+                
                 if is_validation:
                     my_lstm_ranks[full_game_id][ini_hero_pos] = lstm_rank+1
                 if lstm_bot.round_count==max_round:
@@ -247,7 +251,7 @@ def run_one_game_6max_single(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amou
 
 
 
-def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount = 10, opponents = 'default', verbose=False, cst_decks=None):
+def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount = 10, opponents = 'default', verbose=False, cst_decks=None, is_validation=False):
     mkl.set_num_threads(1)
     #ini_stack=ini_stack/nb_sub_matches
     ## Number of (6) games played vs each opponent:
@@ -277,13 +281,15 @@ def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount
         opp_names = opponents['opp_names']
 
     earnings = OrderedDict()
+    lstm_ranks = OrderedDict()
     ## for each bot to oppose
     for table_ind in range(4):
         lstm_bot.clear_log()        
-        my_game_results = [] # [[-1,]*nb_players_6max,].copy()*nb_full_games_per_opp
-        #config = []#[0,]*nb_players_6max*nb_full_games_per_opp
+        my_game_results = [] 
+        my_lstm_ranks = []
         for full_game_id in range(nb_full_games_per_opp):
             my_game_results.append([-1,]*nb_players_6max)
+            my_lstm_ranks.append([-1,]*nb_players_6max)
             ## for each position the hero can find himself
             time_1=time.time()
             for ini_hero_pos in range(nb_players_6max):
@@ -303,8 +309,13 @@ def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount
                     config.register_player(name='p-'+str(opp_id), algorithm=opp_tables[table_ind][i]())
                     opp_id+=1
                 config.set_blind_structure(blind_structure.copy())
-                game_result, last_two_players = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True)
+                if is_validation:
+                    game_result, last_two_players, lstm_rank = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True, return_lstm_rank=True)
+                else:
+                    game_result, last_two_players= start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True)
                 
+                if is_validation:
+                    my_lstm_ranks[full_game_id][ini_hero_pos] = lstm_rank+1
                 if lstm_bot.round_count==max_round:
                     print('Game could not finish in max number of hands')
                     my_game_results[full_game_id][ini_hero_pos] = 0
@@ -318,9 +329,16 @@ def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount
             print('game results' +str(my_game_results))
        
         earnings[opp_names[table_ind]] =np.average(my_game_results)
-        print('earnings: '+str(earnings))
     
-    return earnings
+        if is_validation:
+            lstm_ranks[opp_names[table_ind]] = my_lstm_ranks
+            earnings[opp_names[table_ind]] = my_game_results
+        else:
+            earnings[opp_names[table_ind]] =np.average(my_game_results)
+    if not(is_validation):
+        return earnings
+    else:
+        return earnings, lstm_ranks
 
 
 

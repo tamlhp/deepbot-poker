@@ -22,8 +22,8 @@ nb_hands = 500
 
 ###CONSTANTS
 nb_bots= 1
-simul_id = -5
-log_dir = './simul_data'
+simul_id = '-3_cross'
+log_dir = '../../../backed_simuls'
 sb_amount = 50
 ini_stack = 3000
 nb_generations = 250
@@ -36,7 +36,7 @@ outputs_lstm_2 = []
 outputs_crossover = [[],[],[],[]]
 validation_ids=[2,3,4,5]
 for gen_id in range(5,nb_dif_bots):
-    gen_dir='./simul_data/simul_'+str(simul_id)+'/gen_'+str(gen_id)
+    gen_dir=log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
     with open(gen_dir+'/outputs_0.pkl', 'rb') as fr:
         try:
             while True:

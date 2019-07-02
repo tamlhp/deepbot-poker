@@ -109,7 +109,7 @@ print(my_game_result_1)
 """
 bot_id = 1
 gen_dir='./simul_data/simul_0/gen_0'
-backed_gen_dir = '../../../backed_simuls/simul_9/gen_300'
+backed_gen_dir = '../../../backed_simuls/simul_9/gen_50'
 my_network = '6max_single'
 
 
@@ -125,7 +125,7 @@ with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', '
     #lstm_bot_flat = mutate_bots(orig_bots_flat=[lstm_bot_flat], nb_new_bots=1, 
     #                                      mut_rate=0.1, mut_strength=0.18)[0]
     lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
-    lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
+    lstm_bot = LSTMBot(id_=bot_id, gen_dir = '.', full_dict = lstm_bot_dict, network=my_network)
     lstm_bot_2 = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
     lstm_bot_3 = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
     lstm_bot_4 = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
