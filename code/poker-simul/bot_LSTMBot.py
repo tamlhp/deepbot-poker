@@ -131,9 +131,9 @@ class LSTMBot(BasePokerPlayer):
         #        pickle.dump(net_output, f, protocol=0)
 
             
-        if  random.random() < 0: #net_output>0:#
+        if  len(round_state['community_card'])!=0:#random.random() < 1: #net_output>0:#
             print('\n LSTM')
-            print('net input: ' +str(input_tensor))
+            #print('net input: ' +str(input_tensor))
             print('at round: ' +str(self.round_count))
             print('Stack: ' +str(round_state['seats'][round_state['next_player']]['stack']))
             print('at blind: '+str(round_state['small_blind_amount']))

@@ -109,8 +109,8 @@ print(my_game_result_1)
 """
 bot_id = 1
 gen_dir='./simul_data/simul_0/gen_0'
-backed_gen_dir = '../../../backed_simuls/simul_9/gen_50'
-my_network = '6max_single'
+backed_gen_dir = '../../../backed_simuls/simul_13/gen_250'
+my_network = '6max_full'
 
 
 
@@ -141,7 +141,7 @@ opp_tables = [[CallBot, CallBot, CallBot, ConservativeBot, PStratBot],
               [PStratBot, PStratBot, PStratBot, PStratBot, PStratBot]]
 opp_names = ['call_bot', 'conservative_bot', 'maniac_bot', 'pstrat_bot']
 
-table_ind=4
+table_ind=2
 
 config = setup_config(max_round=nb_hands, initial_stack=1500, small_blind_amount=10)
 for ind in range(5):

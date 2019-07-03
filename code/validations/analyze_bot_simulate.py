@@ -8,6 +8,7 @@ Created on Mon Jul  1 18:23:20 2019
 
 import sys
 sys.path.append('../PyPokerEngine_fork')
+sys.path.append('../poker-simul')
 from pypokerengine.api.game import setup_config, start_poker
 from bot_TestBot import TestBot
 from bot_CallBot import CallBot
@@ -26,6 +27,7 @@ from neuroevolution import get_full_dict, mutate_bots
 import random
 import numpy as np
 
+nb_players_6max = 6
 nb_cards = 52
 nb_hands = 250
 my_network = 'second'
@@ -34,14 +36,16 @@ lstm_ref = LSTMBot(None,network=my_network)
 print('## Starting ##')
 bot_id = 1
 gen_dir='./simul_data/simul_0/gen_0'
-backed_gen_dir = '../../../backed_simuls/simul_9/gen_250'
-my_network = '6max_single'
+backed_gen_dir = '../../../backed_simuls/simul_13/gen_250'
+my_network = '6max_full'
+table_ind=3
 
 log_dir = './simul_data'
 
 write_details= True
-if my_network =='6max_single':
-    for i in range(20):
+if my_network =='6max_single' or my_network=='6max_full':
+    for i in range(1000):
+        print('starting match '+str(i))
         nb_decks = 1
         gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = nb_hands, overwrite=True)
         lstm_ref = LSTMBot(None,network=my_network)
@@ -56,17 +60,30 @@ if my_network =='6max_single':
             lstm_bot = LSTMBot(id_=bot_id, gen_dir = '.', full_dict = lstm_bot_dict, network=my_network, write_details=write_details)
         
         #chosenBot=ManiacBot
+
+        if my_network =='6max_single':
+            opp_tables = [[PStratBot, PStratBot, PStratBot, PStratBot, PStratBot]]
+            opp_names = ['pstratbot']
+        elif my_network=='6max_full':
+            opp_tables = [[CallBot, CallBot, CallBot, ConservativeBot, PStratBot],
+              [ConservativeBot, ConservativeBot, ConservativeBot, CallBot, PStratBot],
+              [ManiacBot, ManiacBot, ManiacBot, ConservativeBot, PStratBot],
+              [PStratBot, PStratBot, PStratBot, CallBot, ConservativeBot]]
+            opp_names = ['call_bot', 'conservative_bot', 'maniac_bot', 'pstrat_bot']
         
-        opp_tables = [[PStratBot, PStratBot, PStratBot, PStratBot, PStratBot]]
-        opp_names = ['pstratbot']
-        
-        table_ind=0
+        ini_hero_pos = i%nb_players_6max
+        opp_id=1
         
         config = setup_config(max_round=nb_hands, initial_stack=1500, small_blind_amount=10)
-        for ind in range(5):
-            config.register_player(name="p-"+str(ind+1), algorithm=opp_tables[table_ind][ind]())
-        config.register_player(name="lstm_bot", algorithm=lstm_bot)
-        #config.register_player(name="p6", algorithm=CallBot())
+        for k in range(ini_hero_pos):
+            config.register_player(name='p-'+str(opp_id), algorithm=opp_tables[table_ind][k]())
+            opp_id+=1
+        config.register_player(name="lstm_bot", algorithm= lstm_bot)
+        opp_id+=1
+        for k in range(ini_hero_pos,nb_players_6max-1):
+            config.register_player(name='p-'+str(opp_id), algorithm=opp_tables[table_ind][k]())
+            opp_id+=1
+
         
         plays_per_blind=90
         blind_structure={0*plays_per_blind:{'ante':0, 'small_blind':10},\

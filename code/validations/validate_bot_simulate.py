@@ -55,7 +55,7 @@ if __name__ == '__main__':
     my_timeout = 800
     
     my_network = '6max_full'
-    backed_gen_dir = '../../final_agents/simul_13/gen_300'
+    backed_gen_dir = '../../final_agents/simul_13/gen_150'
     
     print('## Starting ##')
     lstm_ref = LSTMBot(None,network=my_network)

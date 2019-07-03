@@ -22,7 +22,7 @@ hands_per_match=1000
 
 my_network = '6max_full'
 simul_nb=13
-gen_nb=200
+gen_nb=100
 simul_id = '-'+str(simul_nb)+'_'+str(gen_nb)
 if my_network =='second':
     with open(log_dir+'/simul_'+str(simul_id)+'/bot_earnings.pkl', 'rb') as f:  

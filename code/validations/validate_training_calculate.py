@@ -24,7 +24,7 @@ import random
 import numpy as np
 from operator import add
 import matplotlib.pyplot as plt
-
+my_dpi = 200
             #######
             
 def smooth(y, box_pts):
@@ -36,23 +36,30 @@ def smooth(y, box_pts):
 my_network='6max_single'
 
 simul_id = 9 ## simul id
-if my_network=='6max_full':
+if my_network=='second':
+    opponent_tables=['call_bot','conservative_bot','equity_bot','maniac_bot']
+    my_normalize=True
+    nb_opps=4
+    nb_bots= 60
+    nb_gens = 250
+elif my_network=='6max_full':
     opponent_tables=['call_bot','conservative_bot','maniac_bot','pstrat_bot']
     my_normalize=True
     nb_opps=4
+    nb_bots= 70
+    nb_gens=300
 elif my_network=='6max_single':
     opponent_tables=['pstrat_bot_1']
     my_normalize=False
     nb_opps=1
+    nb_bots= 70
+    nb_gens=300
 
 if __name__ == '__main__':
-
-
 
     #log dir path
     log_dir = '../../../backed_simuls'
     ###CONSTANTS
-    nb_bots= 70
     nb_hands = 300
     sb_amount = 10
     ini_stack = 1500
@@ -64,7 +71,7 @@ if __name__ == '__main__':
     all_avg_earnings=[]
     elite_avg_earnings=[]
     
-    for gen_id in range(0, 300):
+    for gen_id in range(0, nb_gens):
         all_earnings=[]
          #generation's directory
         gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
@@ -94,18 +101,28 @@ if __name__ == '__main__':
         with open(gen_dir+'/surv_earnings.pkl', 'rb') as f:  
             avg_earnings = pickle.load(f)
             all_avg_earnings.append(avg_earnings)
-"""          
+         
 all_avg_earnings=np.array(all_avg_earnings)
-for i in range(0):
+for i in range(0, len(opponent_tables)):
     table_avg_earnings = smooth(all_avg_earnings[:,i], 11)
-    plt.plot(range(len(table_avg_earnings)),table_avg_earnings)
-"""
+    if my_network=='6max_single':
+        plt.plot(range(len(table_avg_earnings)),table_avg_earnings*100, color='pink', alpha=0.8)
 
 elite_avg_earnings=np.array(elite_avg_earnings)
 for i in range(0,len(opponent_tables)):
-    table_avg_earnings = smooth(elite_avg_earnings[:,i], 11)*100
-    plt.plot(range(len(table_avg_earnings)),table_avg_earnings, color='green', alpha=0.5)
-    plt.xlabel('Generation', fontsize='large')
-    plt.ylabel('ROI [%]', fontsize='large')
+    table_avg_earnings = smooth(elite_avg_earnings[:,i], 11)
     if my_network=='6max_single':
-        plt.savefig('6max_training_roi.png',dpi=1000)
+        plt.plot(range(len(table_avg_earnings)),table_avg_earnings*100, color='darkgreen', alpha=0.8)
+        plt.xlabel('Generation', fontsize='large')
+        plt.ylabel('ROI [%]', fontsize='large')
+        plt.legend(['All','Elites'])
+        plt.savefig('6max_training_roi.png',dpi=my_dpi)
+    if my_network=='second':
+        colors=['orange','purple','lightblue','#cc0000']
+        plt.plot(range(len(table_avg_earnings)),table_avg_earnings/1000, color=colors[i], alpha=0.8)
+        plt.xlabel('Generation', fontsize='large')
+        plt.ylabel('mbb/hand', fontsize='large')
+        plt.ylim([-50,200])
+        plt.legend(['Caller','Conservative','EquityBot','Maniac'])
+        plt.savefig('HU_training_roi.png',dpi=my_dpi)
+    
