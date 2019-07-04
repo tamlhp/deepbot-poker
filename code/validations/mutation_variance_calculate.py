@@ -14,21 +14,21 @@ nb_hands = 500
 
 ###CONSTANTS
 nb_bots= 1
-simul_id = -3
-log_dir = './simul_data'
+simul_id = 'simul_-2_mut'
+log_dir = '../../../backed_simuls/'
 sb_amount = 50
 ini_stack = 20000
 nb_generations = 250
 bot_id = 1
 my_network='second'
-
+my_dpi=100
 nb_measures=10
 
 outputs_lstm = []
 outputs_mutant = [[],[],[],[],[],[],[],[],[],[]]
 mut_ids=np.arange(1,nb_measures)
 for gen_id in range(50):
-    gen_dir='./simul_data/simul_'+str(simul_id)+'/gen_'+str(gen_id)
+    gen_dir=log_dir+str(simul_id)+'/gen_'+str(gen_id)
     with open(gen_dir+'/outputs_0.pkl', 'rb') as fr:
         try:
             while True:
@@ -59,5 +59,5 @@ generations=np.linspace(0,250,nb_measures)
 plt.errorbar(generations,outputs_dif_avg,yerr=outputs_dif_std, color='orange',ecolor='#ffcc66')
 plt.ylabel('Average output difference',fontsize='large')
 plt.xlabel('Generation',fontsize='large')
-plt.savefig('mutation_change.png',dpi=1000)
+plt.savefig('mutation_change.png',dpi=my_dpi)
 

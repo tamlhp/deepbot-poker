@@ -30,6 +30,7 @@ nb_generations = 250
 my_network='second'
 
 nb_dif_bots=1000
+my_dpi=100
 
 outputs_lstm_1 = []
 outputs_lstm_2 = []
@@ -88,7 +89,7 @@ plt.boxplot(outputs_dif, 0, '', labels=['per weights','averaged','per group v1',
 plt.legend(['Parents distance'],loc='upper center',bbox_to_anchor=(0.38,1))
 plt.xlabel('Crossover method',fontsize='large')
 plt.ylabel('Output difference', fontsize='large')
-plt.savefig('crossover_change.png',dpi=1000)
+plt.savefig('crossover_change.png',dpi=my_dpi)
 plt.clf()
 
 parent_dist = np.average(outputs_lstm_dif)
@@ -97,4 +98,4 @@ plt.boxplot(outputs_outside, 0, '', labels=['per weights','averaged','per group 
 plt.legend(['Parents distance'],loc='upper center',bbox_to_anchor=(0.38,1))
 plt.xlabel('Crossover method',fontsize='large')
 plt.ylabel('Output difference', fontsize='large')
-plt.savefig('crossover_change_outside.png',dpi=1000)
+plt.savefig('crossover_change_outside.png',dpi=my_dpi)

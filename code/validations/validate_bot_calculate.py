@@ -9,6 +9,7 @@ import pickle
 import numpy as np 
 from functools import reduce
 import matplotlib.pyplot as plt
+import math
 
 ###CONSTANTS
 
@@ -19,10 +20,11 @@ log_dir = '../../../backed_simuls/'
 sb_amount = 50
 ini_stack = 3000
 hands_per_match=1000
+my_dpi=100
 
 my_network = '6max_full'
 simul_nb=13
-gen_nb=100
+gen_nb=250
 simul_id = '-'+str(simul_nb)+'_'+str(gen_nb)
 if my_network =='second':
     with open(log_dir+'/simul_'+str(simul_id)+'/bot_earnings.pkl', 'rb') as f:  
@@ -65,15 +67,17 @@ if my_network=='6max_single':
         patches[i].set_facecolor('red')
     
     
-    plt.xlabel('Finishing place', fontsize='large')
+    plt.xlabel('Rank', fontsize='large')
     plt.ylabel('Density [%]',fontsize='large')
-    plt.savefig('./ranks_images/ranks_6max_single_'+str(gen_nb)+'.png',dpi=1000)
+    plt.savefig('./ranks_images/ranks_6max_single_'+str(gen_nb)+'.png',dpi=my_dpi)
     
     plt.show() 
     
 
 elif my_network=='6max_full':
-    for opponent in ['call_bot','conservative_bot','maniac_bot','pstrat_bot']:
+    titles=['Loose-Passive','Tight-Passive','Loose-Agressive','Tight-Agressive']
+    fig, axes = plt.subplots(nrows=2,ncols=2)
+    for k, opponent in enumerate(['call_bot','conservative_bot','maniac_bot','pstrat_bot']):
         with open(log_dir+'/simul_'+str(simul_id)+'/bot_earnings.pkl', 'rb') as f:  
             all_earnings = pickle.load(f)
         
@@ -98,19 +102,30 @@ elif my_network=='6max_full':
         ranks_pre = reduce(lambda x,y :x+y, ranks_pre_pre)
         ranks = reduce(lambda x,y :x+y, ranks_pre)
         
-        fig, ax = plt.subplots()
-        ax.set_ylim([0,1])
-        N, bins, patches = ax.hist(ranks, bins=[0.5,1.5,2.5,3.5,4.5,5.5,6.5], facecolor='green', alpha=0.5, density = True, align='mid', rwidth = 0.6)
+        axes[math.floor(k/2)][k%2].set_ylim([0,1])
+        N, bins, patches = axes[math.floor(k/2)][k%2].hist(ranks, bins=[0.5,1.5,2.5,3.5,4.5,5.5,6.5], facecolor='green', alpha=0.5, density = True, align='mid', rwidth = 0.6)
         patches[0].set_facecolor('g') 
         patches[1].set_facecolor('y')
         for i in range(2, len(patches)):
             patches[i].set_facecolor('red')
         
+        axes[math.floor(k/2)][k%2].set_title(titles[k], fontweight='black')
+        if math.floor(k/2)==0:
+            axes[math.floor(k/2)][k%2].set_xlabel('')
+            axes[math.floor(k/2)][k%2].set_xticks([])
+        else:
+            axes[math.floor(k/2)][k%2].set_xlabel('Rank', fontsize='large')
+            axes[math.floor(k/2)][k%2].set_xticks([1,2,3,4,5,6])
+    
+        if k%2 ==0:
+            axes[math.floor(k/2)][k%2].set_ylabel('Density [%]',fontsize='large')
+            axes[math.floor(k/2)][k%2].set_yticks([0.00,0.25,0.50,0.75,1.00])
+        else:
+            axes[math.floor(k/2)][k%2].set_ylabel('')
+            axes[math.floor(k/2)][k%2].set_yticks([])
         
-        plt.xlabel('Finishing place', fontsize='large')
-        plt.ylabel('Density [%]',fontsize='large')
-        plt.savefig('./ranks_images/ranks_6max_full_'+str(gen_nb)+'_'+str(opponent)+'.png',dpi=1000)
+    fig.savefig('./ranks_images/ranks_6max_full_'+str(gen_nb)+'.png',dpi=my_dpi)
         
-        plt.show() 
+    plt.show() 
            
         

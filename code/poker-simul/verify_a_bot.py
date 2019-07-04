@@ -109,7 +109,7 @@ print(my_game_result_1)
 """
 bot_id = 1
 gen_dir='./simul_data/simul_0/gen_0'
-backed_gen_dir = '../../../backed_simuls/simul_13/gen_250'
+backed_gen_dir = '../../../backed_simuls/simul_13/gen_300'
 my_network = '6max_full'
 
 
@@ -141,7 +141,7 @@ opp_tables = [[CallBot, CallBot, CallBot, ConservativeBot, PStratBot],
               [PStratBot, PStratBot, PStratBot, PStratBot, PStratBot]]
 opp_names = ['call_bot', 'conservative_bot', 'maniac_bot', 'pstrat_bot']
 
-table_ind=2
+table_ind=3
 
 config = setup_config(max_round=nb_hands, initial_stack=1500, small_blind_amount=10)
 for ind in range(5):
@@ -163,7 +163,7 @@ blind_structure={0*plays_per_blind:{'ante':0, 'small_blind':10},\
         }
 config.set_blind_structure(blind_structure)
 
-game_result, last_two_players, lstm_rank = start_poker(config, verbose=0, cheat = True,cst_deck_ids = cst_decks.copy(), return_last_two =True, return_lstm_rank = True)
+game_result, last_two_players, lstm_rank = start_poker(config, verbose=1, cheat = True,cst_deck_ids = cst_decks.copy(), return_last_two =True, return_lstm_rank = True)
 time_2 = time.time()
 print(game_result)
 #print(str(time_2-time_1))

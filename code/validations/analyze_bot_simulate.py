@@ -36,9 +36,9 @@ lstm_ref = LSTMBot(None,network=my_network)
 print('## Starting ##')
 bot_id = 1
 gen_dir='./simul_data/simul_0/gen_0'
-backed_gen_dir = '../../../backed_simuls/simul_13/gen_250'
+backed_gen_dir = '../../../backed_simuls/simul_13/gen_300'
 my_network = '6max_full'
-table_ind=3
+table_ind=0
 
 log_dir = './simul_data'
 

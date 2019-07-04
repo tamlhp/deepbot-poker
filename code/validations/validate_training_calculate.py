@@ -24,7 +24,7 @@ import random
 import numpy as np
 from operator import add
 import matplotlib.pyplot as plt
-my_dpi = 200
+my_dpi = 100
             #######
             
 def smooth(y, box_pts):
@@ -53,7 +53,7 @@ elif my_network=='6max_single':
     my_normalize=False
     nb_opps=1
     nb_bots= 70
-    nb_gens=300
+    nb_gens=250
 
 if __name__ == '__main__':
 
@@ -111,12 +111,6 @@ for i in range(0, len(opponent_tables)):
 elite_avg_earnings=np.array(elite_avg_earnings)
 for i in range(0,len(opponent_tables)):
     table_avg_earnings = smooth(elite_avg_earnings[:,i], 11)
-    if my_network=='6max_single':
-        plt.plot(range(len(table_avg_earnings)),table_avg_earnings*100, color='darkgreen', alpha=0.8)
-        plt.xlabel('Generation', fontsize='large')
-        plt.ylabel('ROI [%]', fontsize='large')
-        plt.legend(['All','Elites'])
-        plt.savefig('6max_training_roi.png',dpi=my_dpi)
     if my_network=='second':
         colors=['orange','purple','lightblue','#cc0000']
         plt.plot(range(len(table_avg_earnings)),table_avg_earnings/1000, color=colors[i], alpha=0.8)
@@ -125,4 +119,19 @@ for i in range(0,len(opponent_tables)):
         plt.ylim([-50,200])
         plt.legend(['Caller','Conservative','EquityBot','Maniac'])
         plt.savefig('HU_training_roi.png',dpi=my_dpi)
+    elif my_network=='6max_single':
+        plt.plot(range(len(table_avg_earnings)),table_avg_earnings*100, color='darkgreen', alpha=0.8)
+        plt.xlabel('Generation', fontsize='large')
+        plt.ylabel('ROI [%]', fontsize='large')
+        plt.legend(['All','Elites'])
+        plt.savefig('6max_training_roi.png',dpi=my_dpi)
+    elif my_network=='6max_full':
+        colors=['orange','purple','#cc0000','lightblue']
+        plt.plot(range(len(table_avg_earnings)),table_avg_earnings*100, color=colors[i], alpha=0.8)
+        plt.xlabel('Generation', fontsize='large')
+        plt.ylabel('ROI [%]', fontsize='large')
+        plt.legend(['Loose-Passive','Tight-Passive','Loose-Agressive','Tight-Agressive'])
+        plt.savefig('full_6max_training_roi.png',dpi=my_dpi)
+    
+
     
