@@ -41,7 +41,7 @@ def smooth(y, box_pts):
 
 print('## Starting ##')
 bot_id = 1
-my_network = '6max_single'
+my_network = '6max_full'
 table_ind=0
 gen=250
 
@@ -211,9 +211,9 @@ if my_network =='6max_single' or my_network=='6max_full':
             #plt.plot(round_axis,raise_amount_at_round)
             
             freq_raise_street = data.groupby(by=data.street).apply(lambda x: sum(x.action=='raise')/len(x))
-            freq_check_street = data.dropna().groupby(by=data.street).apply(lambda x: sum(np.logical_and(x.action=='call',x.amount<1))/len(x))
-            freq_call_street = data.dropna().groupby(by=data.street).apply(lambda x: sum(np.logical_and(x.action=='call',x.amount>1))/len(x))
-            freq_fold_street = data.dropna().groupby(by=data.street).apply(lambda x: sum(x.action=='fold')/len(x))
+            freq_check_street = data.groupby(by=data.street).apply(lambda x: sum(np.logical_and(x.action=='call',x.amount<1))/len(x))
+            freq_call_street = data.groupby(by=data.street).apply(lambda x: sum(np.logical_and(x.action=='call',x.amount>1))/len(x))
+            freq_fold_street = data.groupby(by=data.street).apply(lambda x: sum(x.action=='fold')/len(x))
             
         #freq_raise_street = data.where(data.nb_opps<1.1).dropna().groupby(by=data.street).apply(lambda x: sum(x.action=='raise')/len(x))
         #freq_call_street = data.where(data.nb_opps<1.1).dropna().groupby(by=data.street).apply(lambda x: sum(x.action=='call')/len(x))
@@ -239,7 +239,7 @@ if my_network =='6max_single' or my_network=='6max_full':
             ax_1.plot(round_axis, smooth_freq_call_round, color='blue', alpha=0.7)
             ax_1.plot(round_axis, smooth_freq_check_round, color='green', alpha=0.7)
             ax_1.plot(round_axis, smooth_freq_fold_round, color='black', alpha=0.7)
-            ax_1.set_xlabel('Round', fontsize='large')
+            ax_1.set_xlabel('Hand', fontsize='large')
             ax_1.set_ylabel('Action frequency [%]',fontsize='large')
 
             
@@ -254,7 +254,7 @@ if my_network =='6max_single' or my_network=='6max_full':
                 axes_1[math.floor(k/2)][k%2].set_xlabel('')
                 axes_1[math.floor(k/2)][k%2].set_xticks([])
             else:
-                axes_1[math.floor(k/2)][k%2].set_xlabel('Round', fontsize='large')
+                axes_1[math.floor(k/2)][k%2].set_xlabel('Hand', fontsize='large')
             if k%2 ==0:
                 axes_1[math.floor(k/2)][k%2].set_ylabel('Action freq [%]',fontsize='large')
             else:
@@ -271,7 +271,7 @@ if my_network =='6max_single' or my_network=='6max_full':
         stack_at_round_smooth = list(smooth(list(stack_at_round),filter_size))
         if my_network == '6max_single':
             ax_2.plot(round_axis, raise_amount_at_round_smooth,color='#cc6600', alpha=0.8)
-            ax_2.set_xlabel('Round', fontsize='large')
+            ax_2.set_xlabel('Hand', fontsize='large')
             # Make the y-axis label, ticks and tick labels match the line color.
             ax_2.set_ylabel('Raise amount', color='#cc6600', fontsize='large')
             ax_2.tick_params('y', colors='#cc6600')
@@ -294,7 +294,7 @@ if my_network =='6max_single' or my_network=='6max_full':
                 axes_2[math.floor(k/2)][k%2].set_xlabel('')
                 axes_2[math.floor(k/2)][k%2].set_xticks([])
             else:
-                axes_2[math.floor(k/2)][k%2].set_xlabel('Round', fontsize='large')
+                axes_2[math.floor(k/2)][k%2].set_xlabel('Hand', fontsize='large')
             if k%2 ==0:
                 axes_2[math.floor(k/2)][k%2].set_ylabel('Raise amount', color='#cc6600', fontsize='large')
                 axes_2[math.floor(k/2)][k%2].tick_params('y', colors='#cc6600')  
@@ -325,7 +325,7 @@ if my_network =='6max_single' or my_network=='6max_full':
             ax_3.plot(freq_reraise_round_.index, smooth_freq_reraise_round, color='red', alpha=0.7)
             ax_3.legend(['Unraised street', 'Raised street'])
             ax_3.set_ylabel('Raise frequency [%]', fontsize='large')
-            ax_3.set_xlabel('Round', fontsize='large')
+            ax_3.set_xlabel('Hand', fontsize='large')
         elif my_network=='6max_full':
             axes_3[math.floor(k/2)][k%2].plot(freq_openraise_round_.index, smooth_freq_openraise_round, color='purple', alpha=0.7)
             axes_3[math.floor(k/2)][k%2].plot(freq_reraise_round_.index, smooth_freq_reraise_round, color='red', alpha=0.7)
@@ -336,7 +336,7 @@ if my_network =='6max_single' or my_network=='6max_full':
                 axes_3[math.floor(k/2)][k%2].set_xlabel('')
                 axes_3[math.floor(k/2)][k%2].set_xticks([])
             else:
-                axes_3[math.floor(k/2)][k%2].set_xlabel('Round', fontsize='large')
+                axes_3[math.floor(k/2)][k%2].set_xlabel('Hand', fontsize='large')
             if k%2 ==0:
                 axes_3[math.floor(k/2)][k%2].set_ylabel('Raise freq [%]', fontsize='large')
             else:
