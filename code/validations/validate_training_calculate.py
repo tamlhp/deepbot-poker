@@ -24,7 +24,7 @@ import random
 import numpy as np
 from operator import add
 import matplotlib.pyplot as plt
-my_dpi = 100
+my_dpi = 500
             #######
             
 def smooth(y, box_pts):
@@ -33,9 +33,9 @@ def smooth(y, box_pts):
     y_smooth = np.convolve(y_extended, box, mode='valid')
     return y_smooth
 
-my_network='6max_single'
+my_network='6max_full'
 
-simul_id = 9 ## simul id
+simul_id = 13 ## simul id
 if my_network=='second':
     opponent_tables=['call_bot','conservative_bot','equity_bot','maniac_bot']
     my_normalize=True
@@ -47,7 +47,7 @@ elif my_network=='6max_full':
     my_normalize=True
     nb_opps=4
     nb_bots= 70
-    nb_gens=300
+    nb_gens=250
 elif my_network=='6max_single':
     opponent_tables=['pstrat_bot_1']
     my_normalize=False
@@ -126,12 +126,18 @@ for i in range(0,len(opponent_tables)):
         plt.legend(['All','Elites'])
         plt.savefig('6max_training_roi.png',dpi=my_dpi)
     elif my_network=='6max_full':
-        colors=['orange','purple','#cc0000','lightblue']
+        colors=['orange','purple','#cc0000','darkgreen']
         plt.plot(range(len(table_avg_earnings)),table_avg_earnings*100, color=colors[i], alpha=0.8)
-        plt.xlabel('Generation', fontsize='large')
-        plt.ylabel('ROI [%]', fontsize='large')
-        plt.legend(['Loose-Passive','Tight-Passive','Loose-Agressive','Tight-Agressive'])
-        plt.savefig('full_6max_training_roi.png',dpi=my_dpi)
+        #plt.xlabel('Generation', fontsize='large)
+        #plt.ylabel('ROI [%]', fontsize='large')
+        #plt.legend(['Loose-Passive','Tight-Passive','Loose-Agressive','Tight-Agressive'])
+        plt.tick_params(axis='x', labelsize=14)
+        plt.tick_params(axis='y', labelsize=14)
+        plt.xlabel('Generation', fontsize=18)
+        plt.ylabel('ROI [%]', fontsize=18)
+        plt.legend(['LP','TP','LA','TA'], fontsize=14)
+        plt.tight_layout()
+        plt.savefig('full_6max_training_roi_poster.png',dpi=my_dpi)
     
 
     
