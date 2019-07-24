@@ -2,3 +2,7 @@
 	path = code/PyPokerEngine
 	url = https://github.com/schreven/PyPokerEngine.git
 	branch = master
+[submodule "code/OMPEval"]
+	path = code/OMPEval
+	url = https://github.com/schreven/OMPEval.git
+	branch = master
