@@ -150,7 +150,7 @@ def comp_hand_equity(hole_card, community_card, n_act_players, nb_board_cards = 
     # std_err_tol : Default is 10**-5 (in c++). This is the std in % at which the hand equity will be returned
     libname = 'libhandequity.so'
     # The path may have to be changed
-    libdir = '../OMPEval_fork/lib/'
+    libdir = '../OMPEval/lib/'
     lib = ctl.load_library(libname, libdir)
     # Defining the python function from the library
     omp_hand_equity = lib.hand_equity

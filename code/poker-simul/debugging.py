@@ -7,7 +7,7 @@ Created on Thu Jun  6 16:16:37 2019
 """
 
 import sys
-sys.path.append('../PyPokerEngine_fork')
+sys.path.append('../PyPokerEngine')
 from pypokerengine.api.game import setup_config, start_poker
 from bot_TestBot import TestBot
 from bot_CallBot import CallBot

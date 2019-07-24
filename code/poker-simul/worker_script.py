@@ -16,7 +16,7 @@ import mkl
 mkl.set_num_threads(1)
 
 import sys
-sys.path.append('../PyPokerEngine_fork/')
+sys.path.append('../PyPokerEngine/')
 sys.path.append('../poker-simul/')
 from pypokerengine.api.game import setup_config, start_poker
 from bot_CallBot import CallBot

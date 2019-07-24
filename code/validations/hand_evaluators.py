@@ -11,7 +11,7 @@ Created on Fri Mar 22 14:37:11 2019
 import sys
 sys.path.append("..")
 import sys
-sys.path.append('../PyPokerEngine_fork')
+sys.path.append('../PyPokerEngine')
 import time
 
 
@@ -23,7 +23,7 @@ import numpy.ctypeslib as ctl
 import ctypes
 libname = 'libhandequity.so'
 # The path may have to be changed
-libdir = '../OMPEval_fork/lib/'
+libdir = '../OMPEval/lib/'
 lib = ctl.load_library(libname, libdir)
 
 # Defining the python function from the library
