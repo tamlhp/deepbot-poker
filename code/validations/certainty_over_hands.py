@@ -5,7 +5,6 @@ Created on Wed May 22 20:28:35 2019
 
 @author: cyril
 """
-from fractions import Fraction
 from scipy.stats import binom
 import numpy as np
 import matplotlib.pyplot as plt

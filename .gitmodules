@@ -1,0 +1,4 @@
+[submodule "code/PyPokerEngine"]
+	path = code/PyPokerEngine
+	url = https://github.com/schreven/PyPokerEngine.git
+	branch = master
