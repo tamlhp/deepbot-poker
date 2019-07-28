@@ -29,100 +29,29 @@ import numpy as np
 nb_cards = 52
 nb_hands = 250
 
-###CONSTANTS
-nb_bots= 1
-simul_id = 0
-log_dir = './simul_data'
-sb_amount = 50
-ini_stack = 3000
-nb_generations = 250
-
-
-my_network = 'second'
-lstm_ref = LSTMBot(None,network=my_network)
 
 print('## Starting ##')
-"""
-
-bot_id = 1
-gen_dir='./simul_data/simul_0/gen_0'
-
-backed_gen_dir = '../../../backed_simuls/simul_8/gen_250'
-with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:  
-    lstm_bot_flat = pickle.load(f)
-    lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
-    lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
-    
-gen_decks(simul_id=simul_id,gen_id=0, log_dir=log_dir,nb_hands = nb_hands)
-with open(gen_dir+'/cst_decks.pkl', 'rb') as f:  
-    cst_decks = pickle.load(f)
-cst_decks_match = cst_decks.copy()
-
-earnings = run_one_game_rebuys(lstm_bot=lstm_bot, nb_hands = 500, ini_stack = 3000, sb_amount = 50, opponents = 'default', verbose=False, cst_decks=cst_decks)
-#simul_id = -1 , gen_id = -1, log_dir = './simul_data', 
-print(earnings)
-"""
-
-
-#bot_id = 1
-#gen_dir='./simul_data/simul_0/gen_0'
-#backed_gen_dir = '../../../backed_simuls/simul_10/gen_298'
-
-## prepare first gen lstm bots and decks
-#gen_rand_bots(simul_id = simul_id, gen_id=0, log_dir=log_dir, nb_bots = nb_bots)
-#gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = 500)
-
-
-"""
-#backed_gen_dir= './simul_data/simul_5/gen_1'
-with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:  
-    lstm_bot_flat = pickle.load(f)
-    lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
-    lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
-
-#load decks
-with open(gen_dir+'/cst_decks.pkl', 'rb') as f:  
-    cst_decks = pickle.load(f)
-
-
-
-#first match
-max_round = nb_hands
-my_game_result_1 = 0
-cst_deck_match=cst_decks.copy()
-lstm_bot.model.reset()
-while True:
-    #print(len(cst_deck_match))
-    config = setup_config(max_round=max_round, initial_stack=ini_stack, small_blind_amount=sb_amount)
-    config.register_player(name='p-5', algorithm=CallBot())
-    config.register_player(name="lstm_bot", algorithm= lstm_bot)
-    game_result_1 = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match)
-    ##Fixing issue with missing last SB in certain wins
-    if game_result_1['players'][1]['stack'] == 2*ini_stack-sb_amount:
-        game_result_1['players'][1]['stack'] = 2*ini_stack
-    my_game_result_1 += game_result_1['players'][1]['stack'] - ini_stack
-    max_round-=(lstm_bot.round_count+1)
-    if max_round<=0:
-        break
-print(my_game_result_1)
-
-"""
-bot_id = 1
-gen_dir='./simul_data/simul_0/gen_0'
-backed_gen_dir = '../../../backed_simuls/simul_13/gen_300'
+### VARIABLES ###
+train_gen_id = 300
+simul_id = 13
 my_network = '6max_full'
 
 
+gen_dir='./simul_data/simul_0/gen_0'
+backed_gen_dir = '../../../backed_simuls/simul_'+str(simul_id)+'/gen_'+str(train_gen_id)
+
+
+bot_id = 1
 
 log_dir = './simul_data'
 gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = 500, overwrite=True)
 lstm_ref = LSTMBot(None,network=my_network)
 
-with open(gen_dir+'/cst_decks.pkl', 'rb') as f:  
+with open(gen_dir+'/cst_decks.pkl', 'rb') as f:
     cst_decks = pickle.load(f)
-with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:  
+with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
     lstm_bot_flat = pickle.load(f)
-    #lstm_bot_flat = mutate_bots(orig_bots_flat=[lstm_bot_flat], nb_new_bots=1, 
+    #lstm_bot_flat = mutate_bots(orig_bots_flat=[lstm_bot_flat], nb_new_bots=1,
     #                                      mut_rate=0.1, mut_strength=0.18)[0]
     lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
     lstm_bot = LSTMBot(id_=bot_id, gen_dir = '.', full_dict = lstm_bot_dict, network=my_network)
@@ -181,3 +110,81 @@ print(lstm_rank)
 print(my_game_results)
 
 #print(lstm_bot.full_dict)
+
+
+"""
+nb_bots= 1
+simul_id = 0
+log_dir = './simul_data'
+sb_amount = 50
+ini_stack = 3000
+nb_generations = 250
+
+
+my_network = 'second'
+lstm_ref = LSTMBot(None,network=my_network)
+
+
+bot_id = 1
+gen_dir='./simul_data/simul_0/gen_0'
+
+backed_gen_dir = '../../../backed_simuls/simul_8/gen_250'
+with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
+    lstm_bot_flat = pickle.load(f)
+    lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
+    lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
+
+gen_decks(simul_id=simul_id,gen_id=0, log_dir=log_dir,nb_hands = nb_hands)
+with open(gen_dir+'/cst_decks.pkl', 'rb') as f:
+    cst_decks = pickle.load(f)
+cst_decks_match = cst_decks.copy()
+
+earnings = run_one_game_rebuys(lstm_bot=lstm_bot, nb_hands = 500, ini_stack = 3000, sb_amount = 50, opponents = 'default', verbose=False, cst_decks=cst_decks)
+#simul_id = -1 , gen_id = -1, log_dir = './simul_data',
+print(earnings)
+"""
+
+
+#bot_id = 1
+#gen_dir='./simul_data/simul_0/gen_0'
+#backed_gen_dir = '../../../backed_simuls/simul_10/gen_298'
+
+## prepare first gen lstm bots and decks
+#gen_rand_bots(simul_id = simul_id, gen_id=0, log_dir=log_dir, nb_bots = nb_bots)
+#gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = 500)
+
+
+"""
+#backed_gen_dir= './simul_data/simul_5/gen_1'
+with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
+    lstm_bot_flat = pickle.load(f)
+    lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
+    lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
+
+#load decks
+with open(gen_dir+'/cst_decks.pkl', 'rb') as f:
+    cst_decks = pickle.load(f)
+
+
+
+#first match
+max_round = nb_hands
+my_game_result_1 = 0
+cst_deck_match=cst_decks.copy()
+lstm_bot.model.reset()
+while True:
+    #print(len(cst_deck_match))
+    config = setup_config(max_round=max_round, initial_stack=ini_stack, small_blind_amount=sb_amount)
+    config.register_player(name='p-5', algorithm=CallBot())
+    config.register_player(name="lstm_bot", algorithm= lstm_bot)
+    game_result_1 = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match)
+    ##Fixing issue with missing last SB in certain wins
+    if game_result_1['players'][1]['stack'] == 2*ini_stack-sb_amount:
+        game_result_1['players'][1]['stack'] = 2*ini_stack
+    my_game_result_1 += game_result_1['players'][1]['stack'] - ini_stack
+    max_round-=(lstm_bot.round_count+1)
+    if max_round<=0:
+        break
+print(my_game_result_1)
+
+"""
