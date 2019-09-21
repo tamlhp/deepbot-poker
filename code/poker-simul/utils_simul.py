@@ -27,17 +27,17 @@ import os
 from functools import reduce
 from collections import OrderedDict
 from neuroevolution import get_flat_params
-    
+
 nb_players_6max = 6
 
 def run_one_game_reg(simul_id , gen_id, lstm_bot, nb_hands = 500, ini_stack = 20000, sb_amount = 50, opponents = 'default', verbose=False, cst_decks=None, nb_sub_matches =10):
     mkl.set_num_threads(1)
     #ini_stack=ini_stack/nb_sub_matches
- 
+
     if opponents == 'default':
-        #opp_algos = [ConservativeBot(), CallBot(), ManiacBot(), CandidBot()]    
+        #opp_algos = [ConservativeBot(), CallBot(), ManiacBot(), CandidBot()]
         #opp_names = ['conservative_bot','call_bot', 'maniac_bot', 'candid_bot']
-        opp_algos = [CallBot(), ConservativeBot(), EquityBot(), ManiacBot()]    
+        opp_algos = [CallBot(), ConservativeBot(), EquityBot(), ManiacBot()]
         opp_names = ['call_bot','conservative_bot', 'equity_bot','maniac_bot']
     else:
         opp_algos = opponents['opp_algos']
@@ -48,7 +48,7 @@ def run_one_game_reg(simul_id , gen_id, lstm_bot, nb_hands = 500, ini_stack = 20
     for opp_algo, opp_name in zip(opp_algos, opp_names):
         lstm_bot.opponent = opp_name
         lstm_bot.clear_log()
-        
+
         #first match
         my_game_result_1 = 0
         cst_deck_match=cst_decks.copy()
@@ -63,9 +63,9 @@ def run_one_game_reg(simul_id , gen_id, lstm_bot, nb_hands = 500, ini_stack = 20
             if game_result_1['players'][1]['stack'] == 2*ini_stack-sb_amount:
                 game_result_1['players'][1]['stack'] = 2*ini_stack
             my_game_result_1 += game_result_1['players'][1]['stack']
-        if verbose: 
+        if verbose:
             print("Stack after first game: "+ str(game_result_1))
-        
+
         #return match
         my_game_result_2 = 0
         cst_deck_match=cst_decks.copy()
@@ -80,15 +80,15 @@ def run_one_game_reg(simul_id , gen_id, lstm_bot, nb_hands = 500, ini_stack = 20
             if game_result_2['players'][0]['stack'] == 2*ini_stack-sb_amount:
                 game_result_2['players'][0]['stack'] = 2*ini_stack
             my_game_result_2 += game_result_2['players'][0]['stack']
-            
-        if verbose:  
+
+        if verbose:
             print("return game: "+ str(game_result_2['players'][0]['stack']))
 
         earnings[opp_name] = my_game_result_1 + my_game_result_2 - 2*ini_stack
-        
+
 
    # print('Done with game of bot number: '+ str(lstm_bot.id))
-    
+
     return earnings
 
 
@@ -97,9 +97,9 @@ def run_one_game_rebuys(lstm_bot, nb_hands = 500, ini_stack = 3000, sb_amount = 
     mkl.set_num_threads(1)
     #ini_stack=ini_stack/nb_sub_matches
     if opponents == 'default':
-        #opp_algos = [ConservativeBot(), CallBot(), ManiacBot(), CandidBot()]    
+        #opp_algos = [ConservativeBot(), CallBot(), ManiacBot(), CandidBot()]
         #opp_names = ['conservative_bot','call_bot', 'maniac_bot', 'candid_bot']
-        opp_algos = [CallBot(), ConservativeBot(), EquityBot(), ManiacBot()]    
+        opp_algos = [CallBot(), ConservativeBot(), EquityBot(), ManiacBot()]
         opp_names = ['call_bot','conservative_bot', 'equity_bot','maniac_bot']
     else:
         opp_algos = opponents['opp_algos']
@@ -110,7 +110,7 @@ def run_one_game_rebuys(lstm_bot, nb_hands = 500, ini_stack = 3000, sb_amount = 
     for opp_algo, opp_name in zip(opp_algos, opp_names):
         lstm_bot.opponent = opp_name
         lstm_bot.clear_log()
-        
+
         #first match
         max_round = nb_hands
         my_game_result_1 = 0
@@ -129,10 +129,10 @@ def run_one_game_rebuys(lstm_bot, nb_hands = 500, ini_stack = 3000, sb_amount = 
             max_round-=(lstm_bot.round_count+1)
             if max_round<=0:
                 break
-            
-        if verbose: 
+
+        if verbose:
             print("Stack after first game: "+ str(game_result_1))
-        
+
         #return match
         max_round = nb_hands
         my_game_result_2 = 0
@@ -151,15 +151,15 @@ def run_one_game_rebuys(lstm_bot, nb_hands = 500, ini_stack = 3000, sb_amount = 
             max_round-=(lstm_bot.round_count+1)
             if max_round<=0:
                 break
-            
-        if verbose:  
+
+        if verbose:
             print("return game: "+ str(game_result_2['players'][0]['stack']))
 
-        earnings[opp_name] = my_game_result_1 + my_game_result_2 
-        
+        earnings[opp_name] = my_game_result_1 + my_game_result_2
+
 
    # print('Done with game of bot number: '+ str(lstm_bot.id))
-    
+
     return earnings
 
 
@@ -182,11 +182,11 @@ def run_one_game_6max_single(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amou
                      8*plays_per_blind:{'ante':50, 'small_blind':400},\
                      9*plays_per_blind:{'ante':75, 'small_blind':600},\
             }
-    
+
     if opponents == 'default':
-        #opp_algos = [ConservativeBot(), CallBot(), ManiacBot(), CandidBot()]    
+        #opp_algos = [ConservativeBot(), CallBot(), ManiacBot(), CandidBot()]
         #opp_names = ['conservative_bot','call_bot', 'maniac_bot', 'candid_bot']
-        opp_algos = [PStratBot]    
+        opp_algos = [PStratBot]
         opp_names = ['pstrat_bot_1']
     else:
         opp_algos = opponents['opp_algos']
@@ -198,7 +198,7 @@ def run_one_game_6max_single(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amou
     for opp_algo, opp_name in zip(opp_algos, opp_names):
         lstm_bot.opponent = opp_name
         lstm_bot.clear_log()
-        
+
         max_round = nb_hands
         lstm_bot.model.reset()
         my_game_results = []
@@ -226,7 +226,7 @@ def run_one_game_6max_single(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amou
                     game_result, last_two_players, lstm_rank = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True, return_lstm_rank=True)
                 else:
                     game_result, last_two_players = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True)
-                
+
                 if is_validation:
                     my_lstm_ranks[full_game_id][ini_hero_pos] = lstm_rank+1
                 if lstm_bot.round_count==max_round:
@@ -238,7 +238,7 @@ def run_one_game_6max_single(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amou
                     if game_result['players'][ini_hero_pos]['stack']>0:
                         my_game_results[full_game_id][ini_hero_pos]=3
             print(my_game_results)
-       
+
         if is_validation:
             lstm_ranks[opp_name] = my_lstm_ranks
             earnings[opp_name] = my_game_results
@@ -269,7 +269,7 @@ def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount
                      8*plays_per_blind:{'ante':50, 'small_blind':400},\
                      9*plays_per_blind:{'ante':75, 'small_blind':600},\
             }
-    
+
     if opponents == 'default':
         opp_tables = [[CallBot, CallBot, CallBot, ConservativeBot, PStratBot],
                       [ConservativeBot, ConservativeBot, ConservativeBot, CallBot, PStratBot],
@@ -284,8 +284,8 @@ def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount
     lstm_ranks = OrderedDict()
     ## for each bot to oppose
     for table_ind in range(4):
-        lstm_bot.clear_log()        
-        my_game_results = [] 
+        lstm_bot.clear_log()
+        my_game_results = []
         my_lstm_ranks = []
         for full_game_id in range(nb_full_games_per_opp):
             my_game_results.append([-1,]*nb_players_6max)
@@ -313,7 +313,7 @@ def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount
                     game_result, last_two_players, lstm_rank = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True, return_lstm_rank=True)
                 else:
                     game_result, last_two_players= start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True)
-                
+
                 if is_validation:
                     my_lstm_ranks[full_game_id][ini_hero_pos] = lstm_rank+1
                 if lstm_bot.round_count==max_round:
@@ -327,9 +327,9 @@ def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount
             time_2=time.time()
             print('Time taken:' +str(time_2-time_1))
             print('game results' +str(my_game_results))
-       
+
         earnings[opp_names[table_ind]] =np.average(my_game_results)
-    
+
         if is_validation:
             lstm_ranks[opp_names[table_ind]] = my_lstm_ranks
             earnings[opp_names[table_ind]] = my_game_results
@@ -341,41 +341,51 @@ def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount
         return earnings, lstm_ranks
 
 
+### GENERATE ALL DECKS OF A GENERATION ####
+def gen_decks(gen_dir, overwrite = True, nb_hands = 300,  nb_cards = 52, nb_games = 1):
+    """
+    gen_dir: directory of the generation ; type=string
+    overwrite: whether to overwrite pre-existant decks if necessary ; type = boolean
+    nb_hands: number of hands played ; type = int
+    nb_cards: number of cards in the deck ; type = int
+    nb_games: number of games played (by each agent) at a generation; type = int
 
-def gen_decks(simul_id, gen_id, log_dir = './simul_data', nb_hands = 500, nb_cards =52, overwrite = True, nb_decks=1):
-    
-    #create dir for generation
-    gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
-    if not os.path.exists(gen_dir):
-        os.makedirs(gen_dir) 
-    ### GENERATE ALL DECKS ####
-    cst_decks=[0,]*nb_decks
-    for i in range(nb_decks):
-        cst_decks[i] = reduce(lambda x1,x2: x1+x2, [random.sample(range(1,nb_cards+1),nb_cards) for i in range(nb_hands)]) #the are 52 cards
-        # writing down down the list of cards:
-    if nb_decks==1:
-        cst_decks = cst_decks[0]
-    if overwrite==True or not os.path.exists(gen_dir+'/cst_decks.pkl'):
-        with open(gen_dir+'/cst_decks.pkl', 'wb') as f:  
+    cst_decks: All the decks necessary for one generation; type: list of list | shape : [nb_games, nb_hands, nb_cards]
+    """
+    #If decks are already generated and function should not overwrite, simply load deck.
+    #This happens when rerunning the same simulation.
+    if os.path.exists(gen_dir+'/cst_decks.pkl') and overwrite==False:
+        with open(gen_dir+'/cst_decks.pkl', 'rb') as f:
+            cst_decks = pickle.load(f)
+    #Else, generate decks
+    else:
+        cst_decks=[0,]*nb_games
+        for i in range(nb_games):
+            #generating nb_games lists of nb_hands lists of size nb_cards
+            cst_decks[i] = reduce(lambda x1,x2: x1+x2, [random.sample(range(1,nb_cards+1),nb_cards) for i in range(nb_hands)])
+        if nb_games==1:
+            cst_decks = cst_decks[0]
+        with open(gen_dir+'/cst_decks.pkl', 'wb') as f:
             pickle.dump(cst_decks, f, protocol=2)
-    return
-        
+
+    return cst_decks
+
 def gen_rand_bots(simul_id, gen_id, log_dir = './simul_data', overwrite=True, nb_bots=50, network='first'):
     #create dir for generation
     gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
     if not os.path.exists(gen_dir):
-        os.makedirs(gen_dir) 
-    
+        os.makedirs(gen_dir)
+
     if not os.path.exists(gen_dir+'/bots'):
-        os.makedirs(gen_dir+'/bots') 
+        os.makedirs(gen_dir+'/bots')
         ### GENERATE ALL BOTS ####
     if overwrite == True or not os.path.exists(gen_dir+'/bots/'+str(1)+'/bot_'+str(1)+'_flat.pkl'):
         full_dict = None
         for bot_id in range(1,nb_bots+1): #there are usually 50 bots
             if not os.path.exists(gen_dir+'/bots/'+str(bot_id)):
-                os.makedirs(gen_dir+'/bots/'+str(bot_id)) 
+                os.makedirs(gen_dir+'/bots/'+str(bot_id))
             lstm_bot = LSTMBot(id_= bot_id, full_dict=full_dict, gen_dir = gen_dir, network=network)
-            with open(gen_dir+'/bots/'+str(lstm_bot.id)+'/bot_'+str(lstm_bot.id)+'_flat.pkl', 'wb') as f:  
+            with open(gen_dir+'/bots/'+str(lstm_bot.id)+'/bot_'+str(lstm_bot.id)+'_flat.pkl', 'wb') as f:
                 pickle.dump(get_flat_params(lstm_bot.full_dict), f, protocol=0)
     return
 

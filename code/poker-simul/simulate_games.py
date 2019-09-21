@@ -22,83 +22,98 @@ from utils_io import prep_gen_dirs, get_all_gen_flat
 import random
 import numpy as np
 from operator import add
+import argparse
 
 
-
-
-            #######
-
-
-my_network='6max_full'
-nb_opps=4
-my_normalize=True
-my_nb_decks=4*4
-
-my_timeout=800
-
-machine='local'
-
-if machine=='local':
-    REDIS_HOST = '127.0.0.1'
-elif machine=='ec2':
-    REDIS_HOST = '172.31.42.99'
-
-#redis style
 if __name__ == '__main__':
-    #start redis and clear queue
+    #PARSE ARGUMENTS
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--redis_host',  default='local', type=string, help='Address of redis host. [local, ec2, *]')
+    parser.add_argument('--neural_network',  default='6max_full', type=string, help='Neural network architecture to use. [first, second, 6max_single, 6max_full]')
+    parser.add_argument('--norm_fitfunc', default=True, type=boolean, help='Wether to use normalization scheme in the genetic algorithm\'s fitness function.')
+    parser.add_argument('--worker_timeout', default=800, type=int, help='Time in seconds before a job taken by a worker and not returned is considered to have timed out.')
+    parser.add_argument('--simul_id', type=int, help='Id of the simulation. Must be defined to avoid overwriting past simulations.')
+    parser.add_argument('--ga_popsize', default=70, type=int, help='Population size of the genetic algorithm.')
+    parser.add_argument('--ga_nb_gens', default=250, type=int, help='Number of generations of the genetic algorithm.')
+    parser.add_argument('--ga_ini_gen', default=0, type=int, help='The generation at which to start the genetic algorithm. Used to resume an interrupted simulation.')
+    parser.add_argument('--max_hands', default=300, type=int, help='Maximum number of hands played in a tournament. If attained, the agent is considered to have lost.')
+    parser.add_argument('--small_blind', default=10, type=int, help='Initial small blind amount. If tournament, the blind structure will overrule.')
+    parser.add_argument('--ini_stack', default=1500, type=int, help='Initial stack of the players.')
+    parser.add_argument('--log_dir', default='./simul_data', type=string, help='The path of the file where the simulation data will be stored.')
+
+    parser.add_argument('--nb_opps', default=4, type=int, help= 'Number of different tables against which to train')
+
+
+    args = parser.parse_args()
+    if args.redis_host == 'local':
+        REDIS_HOST = '127.0.0.1'
+    elif args.redis_host == 'ec2':
+        REDIS_HOST = '172.31.42.99'
+    else:
+        REDIS_HOST = args.redis_host
+
+    my_network = args.neural_network
+    my_normalize = args.norm_fitfunc
+    my_timeout = args.worker_timeout
+    simul_id = args.simul_id
+    nb_bots = args.ga_popsize
+    nb_generations = args.ga_nb_gens
+    ini_gen = args.ga_ini_gen
+    nb_hands = args.max_hands
+    sb_amount = args.small_blind
+    ini_stack = args.ini_stack
+
+    nb_opps = args.nb_opps #TODO, move to simul arch def
+    my_nb_games = nb_opps*4 #TODO, move to simul arch def
+
+    if my_network in ['first','second']: #TODO handle differently.
+        my_nb_games=1
+
+    ## Start redis host and clear queue
     redis = Redis(REDIS_HOST)
-    q = Queue(connection=redis, default_timeout=my_timeout)             # start 4 worker processes
+    q = Queue(connection=redis, default_timeout=my_timeout)
     for j in q.jobs:
         j.cancel()
 
-    ## layer size references
-    lstm_ref = LSTMBot(network=my_network)
-    #log dir path
-    log_dir = './simul_data'
-    simul_id = 15 ## simul id
+    ## Neural network layer size reference
+    lstm_ref = LSTMBot(network=my_network) #TODO, see if movable
 
+    print('## Starting new simulations ##')
 
+    if ini_gen==0:
+        ## Generate first generation of bots (=agents) randomly
+        gen_rand_bots(simul_id = simul_id, gen_id=ini_gen, log_dir=log_dir, nb_bots = nb_bots, overwrite=False,
+                      network=my_network)
 
-    ###CONSTANTS
-    nb_bots= 70
-    nb_hands = 300
-    sb_amount = 10
-    ini_stack = 1500
-    nb_generations = 250
-    #nb_sub_matches=10
-
-    print('## Starting ##')
-    ## prepare first gen lstm bots
-    gen_rand_bots(simul_id = simul_id, gen_id=0, log_dir=log_dir, nb_bots = nb_bots, overwrite=False,
-                  network=my_network)
-
-    for gen_id in range(0, nb_generations):
+    for gen_id in range(ini_gen, nb_generations):
         print('\n Starting generation: ' + str(gen_id))
-        jobs = []
-        #prepare generation deck
-        if my_network=='6max_single' or my_network=='6max_full':
-            gen_decks(simul_id=simul_id,gen_id=gen_id, log_dir=log_dir, overwrite=False, nb_hands=nb_hands, nb_decks=my_nb_decks)
-        else:
-            gen_decks(simul_id=simul_id,gen_id=gen_id, log_dir=log_dir, overwrite=False, nb_hands=nb_hands)
-        #generation's directory
+
+        #Define generation's directory. Create except if already existing
         gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
-        time_1 = time.time()
-        ## play matches
-        with open(gen_dir+'/cst_decks.pkl', 'rb') as f:
-            cst_decks = pickle.load(f)
+        if not os.path.exists(gen_dir):
+            os.makedirs(gen_dir)
+        #Empty jobs list
+        jobs = []
+        #Prepare all decks of the generation
+        cst_decks = gen_decks(gen_dir = gen_dir, overwrite=False, nb_hands=nb_hands, nb_games=my_nb_games)
+        time_start = time.time()
+
         for bot_id in range(1,nb_bots+1):
+            #Load the bot
             with open(gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
                 lstm_bot_flat = pickle.load(f)
                 lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
-                lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict,
-                                   network=my_network)
+                lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
+            #Enqueue job to play bot's games
             try:
+                jobs.append(q.enqueue(run_games, timeout=my_timeout, kwargs = dict(network=my_network, lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)))
+
                 if my_network=='6max_single':
-                    jobs.append(q.enqueue(run_one_game_6max_single, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)))
+                    jobs.append(q.enqueue(run_one_game_6max_single, timeout=my_timeout, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)))
                 elif my_network=='6max_full':
-                    jobs.append(q.enqueue(run_one_game_6max_full, timeout=my_timeout, result_ttl=my_timeout, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)))
+                    jobs.append(q.enqueue(run_one_game_6max_full, timeout=my_timeout, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)))
                 else:
-                    jobs.append(q.enqueue(run_one_game_rebuys, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)))
+                    jobs.append(q.enqueue(run_one_game_rebuys, timeout=my_timeout, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)))
             except ConnectionError:
                 print('Currently not connected to redis server')
                 continue
@@ -137,8 +152,8 @@ if __name__ == '__main__':
                 #print("Number of jobs remaining: " + str(sum([all_earnings[i]==None for i in range(len(all_earnings))])))
             #time.sleep(0.2)
 
-        time_2 = time.time()
-        print('Done with MATCHES of generation number :'+str(gen_id)+', it took '+str(time_2-time_1) +' seconds.')
+        time_end = time.time()
+        print('Done with MATCHES of generation number :'+str(gen_id)+', it took '+str(time_end-time_start) +' seconds.')
         ##saving all earnings
         for i, earnings in enumerate(all_earnings):
             with open(gen_dir+'/bots/'+str(i+1)+'/earnings.pkl', 'wb') as f:
