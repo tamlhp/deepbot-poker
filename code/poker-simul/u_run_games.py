@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed May 15 13:15:22 2019
+Created on Sat Sep 21 14:47:23 2019
 
 @author: cyril
 """
+
+#TODO remove uncessary imports
+
 import mkl
 mkl.set_num_threads(1)
 import sys
@@ -30,23 +33,73 @@ from neuroevolution import get_flat_params
 
 nb_players_6max = 6
 
-def run_one_game_reg(simul_id , gen_id, lstm_bot, nb_hands = 500, ini_stack = 20000, sb_amount = 50, opponents = 'default', verbose=False, cst_decks=None, nb_sub_matches =10):
+def run_generation_games(nb_bots, my_network, my_timeout, train_env, lstm_bot, cst_decks, ini_stack, sb_amount, nb_hands):
+    for bot_id in range(1,nb_bots+1):
+        #Load the bot
+        with open(gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
+            lstm_bot_flat = pickle.load(f)
+            lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
+            lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
+        #Enqueue job to play bot's games
+        try:
+            jobs.append(q.enqueue(run_games, timeout=my_timeout, kwargs = dict(train_env=train_env, lstm_bot=lstm_bot, cst_decks = cst_decks, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands)))
+        except ConnectionError:
+            print('Currently not connected to redis server')
+            continue
+
+    last_enqueue_time = time.time()
+    # Fetch jobs' statusses every second
+    while True:
+        for i in range(len(jobs)):
+            if jobs[i].result is not None and not isinstance(jobs[i], FakeJob):
+                jobs[i] = FakeJob(jobs[i])
+        all_earnings = [j.result for j in jobs]
+        time.sleep(1) #1 second
+        # If all jobs are done, break
+        if None not in all_earnings:
+            break
+        # If jobs are not finished after timeout threshold, reenqueue.
+        # Helps when connection occasionaly breaks. May also be the sign of an error in u_run_games.py.
+        if time.time() - last_enqueue_time > my_timeout:
+            print('Reenqueuing unfinished jobs '+ str({sum(x is None for x in all_earnings)}))
+            for i in range(len(jobs)):
+                if jobs[i].result is None:
+                    try:
+                        jobs[i].cancel()
+                        jobs.append(q.enqueue(run_games, timeout=my_timeout, kwargs = dict(train_env=train_env, lstm_bot=lstm_bot, cst_decks = cst_decks, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands)))
+                    except ConnectionError:
+                        print('Currently not connected to redis server')
+                        continue
+            last_enqueue_time = time.time()
+            #if verbose:
+                #print("Number of jobs remaining: " + str(sum([all_earnings[i]==None for i in range(len(all_earnings))])))
+    return all_earnings
+
+
+def run_games(train_env, lstm_bot, cst_decks, ini_stack=1500, sb_amount=10, nb_hands=300):
+    if train_env == 'hu_cash_mixed':
+        run_one_game_rebuys(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)
+    elif train_env=='6max_sng_single':
+        run_one_game_6max_single(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)
+    elif train_env=='6max_sng_mixed':
+        run_one_game_6max_full(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)
+    else:
+        print('[run_games] ERROR: train_env not recognized')
+    return
+
+def run_one_game_reg(simul_id , gen_id, lstm_bot, verbose=False, cst_decks=None, nb_sub_matches =10):
     mkl.set_num_threads(1)
     #ini_stack=ini_stack/nb_sub_matches
-
-    if opponents == 'default':
-        #opp_algos = [ConservativeBot(), CallBot(), ManiacBot(), CandidBot()]
-        #opp_names = ['conservative_bot','call_bot', 'maniac_bot', 'candid_bot']
-        opp_algos = [CallBot(), ConservativeBot(), EquityBot(), ManiacBot()]
-        opp_names = ['call_bot','conservative_bot', 'equity_bot','maniac_bot']
-    else:
-        opp_algos = opponents['opp_algos']
-        opp_names = opponents['opp_names']
+    #CONFIGURATION
+    nb_hands = 500
+    ini_stack = 2000
+    sb_amount = 50
+    opp_algos = [CallBot(), ConservativeBot(), EquityBot(), ManiacBot()]
+    opp_names = ['call_bot','conservative_bot', 'equity_bot','maniac_bot']
 
     earnings = OrderedDict()
     ## for each bot to oppose
     for opp_algo, opp_name in zip(opp_algos, opp_names):
-        lstm_bot.opponent = opp_name
         lstm_bot.clear_log()
 
         #first match
@@ -339,55 +392,6 @@ def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount
         return earnings
     else:
         return earnings, lstm_ranks
-
-
-### GENERATE ALL DECKS OF A GENERATION ####
-def gen_decks(gen_dir, overwrite = True, nb_hands = 300,  nb_cards = 52, nb_games = 1):
-    """
-    gen_dir: directory of the generation ; type=string
-    overwrite: whether to overwrite pre-existant decks if necessary ; type = boolean
-    nb_hands: number of hands played ; type = int
-    nb_cards: number of cards in the deck ; type = int
-    nb_games: number of games played (by each agent) at a generation; type = int
-
-    cst_decks: All the decks necessary for one generation; type: list of list | shape : [nb_games, nb_hands, nb_cards]
-    """
-    #If decks are already generated and function should not overwrite, simply load deck.
-    #This happens when rerunning the same simulation.
-    if os.path.exists(gen_dir+'/cst_decks.pkl') and overwrite==False:
-        with open(gen_dir+'/cst_decks.pkl', 'rb') as f:
-            cst_decks = pickle.load(f)
-    #Else, generate decks
-    else:
-        cst_decks=[0,]*nb_games
-        for i in range(nb_games):
-            #generating nb_games lists of nb_hands lists of size nb_cards
-            cst_decks[i] = reduce(lambda x1,x2: x1+x2, [random.sample(range(1,nb_cards+1),nb_cards) for i in range(nb_hands)])
-        if nb_games==1:
-            cst_decks = cst_decks[0]
-        with open(gen_dir+'/cst_decks.pkl', 'wb') as f:
-            pickle.dump(cst_decks, f, protocol=2)
-
-    return cst_decks
-
-def gen_rand_bots(simul_id, gen_id, log_dir = './simul_data', overwrite=True, nb_bots=50, network='first'):
-    #create dir for generation
-    gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
-    if not os.path.exists(gen_dir):
-        os.makedirs(gen_dir)
-
-    if not os.path.exists(gen_dir+'/bots'):
-        os.makedirs(gen_dir+'/bots')
-        ### GENERATE ALL BOTS ####
-    if overwrite == True or not os.path.exists(gen_dir+'/bots/'+str(1)+'/bot_'+str(1)+'_flat.pkl'):
-        full_dict = None
-        for bot_id in range(1,nb_bots+1): #there are usually 50 bots
-            if not os.path.exists(gen_dir+'/bots/'+str(bot_id)):
-                os.makedirs(gen_dir+'/bots/'+str(bot_id))
-            lstm_bot = LSTMBot(id_= bot_id, full_dict=full_dict, gen_dir = gen_dir, network=network)
-            with open(gen_dir+'/bots/'+str(lstm_bot.id)+'/bot_'+str(lstm_bot.id)+'_flat.pkl', 'wb') as f:
-                pickle.dump(get_flat_params(lstm_bot.full_dict), f, protocol=0)
-    return
 
 class FakeJob:
     def __init__(self, j):

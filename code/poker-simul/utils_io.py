@@ -20,7 +20,7 @@ def write_declare_action_state(round_id, action_id, net_input, net_output, actio
     state_row = [{'round_id': round_id, 'action_id': action_id, 'net_input':net_input_cust, 'net_output':net_output, 'action':action, 'amount':amount}]
     csv_path = reduce(lambda x,y :x+'/'+y, csv_file.split('/')[:-1])
     if not os.path.exists(csv_path):
-        os.makedirs(csv_path) 
+        os.makedirs(csv_path)
         with open(csv_file,'a') as hand_data_csv:
             f_csv = csv.DictWriter(hand_data_csv, ['round_id', 'action_id', 'net_input','net_output','action','amount'])
             f_csv.writeheader()
@@ -64,18 +64,3 @@ def find_round_id(csv_file = './test_round_results.csv'):
     except:
         next_round_id = 0
     return next_round_id
-
-def prep_gen_dirs(dir_):
-    if not os.path.exists(dir_):
-        os.makedirs(dir_) 
-    if not os.path.exists(dir_+'/bots'):
-        os.makedirs(dir_+'/bots') 
-        
-        
-def get_all_gen_flat(dir_, nb_bots = 50):
-    all_gen_flat = []
-    for bot_id in range(1,nb_bots+1):
-        with open(dir_+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:  
-            params_flat = pickle.load(f)
-            all_gen_flat.append(params_flat)
-    return all_gen_flat

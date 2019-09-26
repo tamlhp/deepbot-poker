@@ -85,8 +85,7 @@ class LSTMBot(BasePokerPlayer):
         self.id = id_
         self.gen_dir = gen_dir
         #if not os.path.exists(self.gen_dir+'/bots/'+str(self.id)):
-        #    os.makedirs(self.gen_dir+'/bots/'+str(self.id))
-        self.opponent = None
+        #    os.makedirs(self.gen_dir+'/bots/'+str(self.id)
         self.num_players = 6
         self.validation_mode = validation_mode
         self.validation_id = validation_id
@@ -144,16 +143,9 @@ class LSTMBot(BasePokerPlayer):
 
     def receive_game_start_message(self, game_info):
         self.i_stack = game_info['rule']['initial_stack']
-        if self.write_details and False:
-            self.action_id = find_action_id(csv_file = self.gen_dir+'/bots/'+str(id)+'/'+str(self.opponent)+'_declare_action_state.csv')
-            self.round_id = find_round_id(csv_file = self.gen_dir+'/bots/'+str(id)+'/'+str(self.opponent)+'_round_result_state.csv')
-        pass
 
     def receive_round_start_message(self, round_count, hole_card, seats):
         self.round_count = round_count
-        if self.write_details and False:
-            write_round_start_state(round_id = self.round_id, seats = seats, csv_file = self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_round_start_state.csv')
-        pass
 
     def receive_street_start_message(self, street, round_state):
         pass
