@@ -64,3 +64,7 @@ Back on the host machine run:
 python3 simulate_games.py
 ```
 The host will send games to be simulated to the computing machine, which will return the performance of the agent at these games. This is done for 250 generations.
+
+
+## start gui
+pypokergui serve /home/cyril/Documents/deepbot/deepbot-git/code/poker-simul/poker_conf.yaml --port 8000 --speed moderate

@@ -47,7 +47,7 @@ if __name__ == '__main__':
     nb_hands = 500
     simul_id = -1
     gen_id=-1
-    nb_bots= 1
+    ga_popsize= 1
     log_dir = './simul_data'
     sb_amount = 50
     ini_stack = 3000

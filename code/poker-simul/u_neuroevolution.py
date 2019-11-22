@@ -17,21 +17,24 @@ import torch
 from sys import getsizeof
 from collections import OrderedDict
 from operator import add
+from u_formatting import get_dict_sizes
 
 
-def select_next_gen_bots(log_dir, simul_id, gen_id, all_earnings, BB, nb_bots, gen_flat_params, nb_gens= 250, network='first', nb_opps=4, normalize=True, verbose=True):
+def select_next_gen_bots(log_dir, simul_id, gen_id, all_earnings, BB, ga_popsize, gen_flat_params, nb_gens= 250, network='first', nb_opps=4, normalize=True, verbose=True):
     mkl.set_num_threads(64)
     #old_gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
     #creating new generation directory
     lstm_ref = LSTMBot(None, network=network)
 
-    ANEs = compute_ANE(all_earnings=all_earnings, BB=BB, nb_bots=nb_bots, nb_opps=nb_opps, normalize=normalize)
+    ANEs = compute_ANE(all_earnings=all_earnings, BB=BB, ga_popsize=ga_popsize, nb_opps=nb_opps, normalize=normalize)
     ord_bot_ids = [el+1 for el in sorted(range(len(ANEs)), key=lambda i:ANEs[i], reverse=True)]
 
     #SELECTING SURVIVORS
     surv_perc = 0.3
-    surv_bot_ids = ord_bot_ids[:int(surv_perc*nb_bots)]
+    surv_bot_ids = ord_bot_ids[:int(surv_perc*ga_popsize)]
     surv_bots_flat = []
+    print(len(surv_bot_ids))
+    print(gen_flat_params)
     for bot_id in surv_bot_ids:
         surv_bot_flat = gen_flat_params[bot_id-1]
         surv_bots_flat.append(surv_bot_flat)
@@ -97,10 +100,10 @@ def select_next_gen_bots(log_dir, simul_id, gen_id, all_earnings, BB, nb_bots, g
 
     if verbose: print('Nb surviving bots: ' +str(len(surv_bot_ids))+ ', nb elite bots: '+str(len(elite_bot_ids)))
 
-    nb_new_crossover = nb_bots- len(surv_bot_ids)
+    nb_new_crossover = ga_popsize- len(surv_bot_ids)
     cross_bots_flat = crossover_bots(parent_bots_flat = elite_bots_flat, m_sizes_ref = lstm_ref, nb_new_bots = nb_new_crossover)
     if verbose: print('Done with crossover')
-    nb_new_mutant = nb_bots - len(elite_bot_ids)
+    nb_new_mutant = ga_popsize - len(elite_bot_ids)
     mut_rate = 0.3 - 0.25*gen_id/nb_gens #0.25 - 0.2*gen_id/nb_gens# #TODO, put values as argument, important values
     mut_strength =  0.5 - 0.4*gen_id/nb_gens #0.5 - 0.4*gen_id/nb_gens #
     mutant_bots_flat = mutate_bots(orig_bots_flat = sec_tier_bots_flat+cross_bots_flat, nb_new_bots = nb_new_mutant,
@@ -109,33 +112,6 @@ def select_next_gen_bots(log_dir, simul_id, gen_id, all_earnings, BB, nb_bots, g
     new_gen_bots = elite_bots_flat+mutant_bots_flat
 
     return new_gen_bots
-
-def compute_ANE(all_earnings, BB, nb_bots=50, load = False, gen_dir = None, nb_opps = 4, normalize=True):
-    if load:
-        all_earnings = [0,]*nb_bots
-        for bot_id in range (1,nb_bots+1):
-            with open(gen_dir+'/bots/'+str(bot_id)+'/earnings.pkl', 'rb') as f:
-                all_earnings[bot_id-1] = pickle.load(f)
-
-    earnings_arr = np.array([list(earning.values()) for earning in all_earnings])
-
-    if normalize==True:
-        #set all values to positive
-       # earnings_arr = [list(earning) for earning in earnings_arr]
-        n_j_pos = np.max([0.1*np.ones(nb_opps),np.max(earnings_arr,axis=0)], axis=0)
-        n_j_neg = np.max([0.1*np.ones(nb_opps),np.abs(np.min(earnings_arr,axis=0))], axis=0)
-        if verbose:
-            print('ANEs positive normalization factors: ' +str(n_j_pos))
-            print('ANEs negative normalization factors: ' +str(n_j_neg))
-        #alternative approach
-
-        #use average earnings
-        #n_j = np.max([np.sqrt(BB*np.ones(nb_opps)),np.average(earnings_arr,axis=0)], axis=0)
-
-        ANEs = np.sum(np.where(earnings_arr>0, earnings_arr/n_j_pos, earnings_arr/n_j_neg), axis = 1)/nb_opps
-    else:
-        ANEs = np.sum(earnings_arr, axis = 1)/nb_opps
-    return ANEs
 
 def crossover_bots(parent_bots_flat, m_sizes_ref, nb_new_bots):
     cross_bots = []
@@ -180,7 +156,34 @@ def mutate_bots(orig_bots_flat, mut_rate, mut_strength, nb_new_bots):
         mutant_bots.append(mutant_flat_params)
     return mutant_bots
 
-def get_best_ANE_earnings(all_earnings, BB=100, nb_bots = 50, nb_opps=4, normalize=True):
-    ANEs = compute_ANE(all_earnings=all_earnings, BB=BB, nb_bots=nb_bots, nb_opps=nb_opps, normalize=normalize)
+def get_best_ANE_earnings(all_earnings, BB=100, ga_popsize = 50, nb_opps=4, normalize=True):
+    ANEs = compute_ANE(all_earnings=all_earnings, BB=BB, ga_popsize=ga_popsize, nb_opps=nb_opps, normalize=normalize)
     best_bot_id = [el for el in sorted(range(len(ANEs)), key=lambda i:ANEs[i], reverse=True)][0]
     return all_earnings[best_bot_id]
+
+def compute_ANE(all_earnings, BB, ga_popsize=50, load = False, gen_dir = None, nb_opps = 4, normalize=True, verbose=False):
+    if load:
+        all_earnings = [0,]*ga_popsize
+        for bot_id in range (1,ga_popsize+1):
+            with open(gen_dir+'/bots/'+str(bot_id)+'/earnings.pkl', 'rb') as f:
+                all_earnings[bot_id-1] = pickle.load(f)
+
+    earnings_arr = np.array([list(earning.values()) for earning in all_earnings])
+
+    if normalize==True:
+        #set all values to positive
+       # earnings_arr = [list(earning) for earning in earnings_arr]
+        n_j_pos = np.max([0.1*np.ones(nb_opps),np.max(earnings_arr,axis=0)], axis=0)
+        n_j_neg = np.max([0.1*np.ones(nb_opps),np.abs(np.min(earnings_arr,axis=0))], axis=0)
+        if verbose:
+            print('ANEs positive normalization factors: ' +str(n_j_pos))
+            print('ANEs negative normalization factors: ' +str(n_j_neg))
+        #alternative approach
+
+        #use average earnings
+        #n_j = np.max([np.sqrt(BB*np.ones(nb_opps)),np.average(earnings_arr,axis=0)], axis=0)
+
+        ANEs = np.sum(np.where(earnings_arr>0, earnings_arr/n_j_pos, earnings_arr/n_j_neg), axis = 1)/nb_opps
+    else:
+        ANEs = np.sum(earnings_arr, axis = 1)/nb_opps
+    return ANEs

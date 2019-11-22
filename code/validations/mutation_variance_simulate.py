@@ -32,7 +32,7 @@ nb_hands = 5
 nb_dif_bots=1000
 
 ###CONSTANTS
-nb_bots= 1
+ga_popsize= 1
 simul_id = -18
 log_dir = './simul_data'
 sb_amount = 50
@@ -50,7 +50,7 @@ print('\n FIRST LSTM BOT')
 validation_id=0
 for gen_id in range(nb_dif_bots):
     max_round = nb_hands
-    gen_rand_bots(simul_id = simul_id, gen_id=gen_id, log_dir=log_dir, nb_bots = nb_bots, network=my_network, overwrite=True)
+    gen_rand_bots(simul_id = simul_id, gen_id=gen_id, log_dir=log_dir, ga_popsize = ga_popsize, network=my_network, overwrite=True)
     gen_decks(simul_id=simul_id,gen_id=gen_id, log_dir=log_dir,nb_hands = nb_hands, overwrite=True)
     gen_dir='./simul_data/simul_'+str(simul_id)+'/gen_'+str(gen_id)
     #load decks

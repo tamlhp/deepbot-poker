@@ -171,7 +171,7 @@ nb_hands = 5
 nb_dif_bots=1000
 
 ###CONSTANTS
-nb_bots= 2
+ga_popsize= 2
 simul_id = -5
 log_dir = './simul_data'
 sb_amount = 50
@@ -189,7 +189,7 @@ print('\n LSTM BOT')
 bot_ids=[1,2]
 
 for gen_id in range(0):
-    gen_rand_bots(simul_id = simul_id, gen_id=gen_id, log_dir=log_dir, nb_bots = nb_bots, network=my_network, overwrite=True)
+    gen_rand_bots(simul_id = simul_id, gen_id=gen_id, log_dir=log_dir, ga_popsize = ga_popsize, network=my_network, overwrite=True)
     gen_decks(simul_id=simul_id,gen_id=gen_id, log_dir=log_dir,nb_hands = nb_hands, overwrite=True)
     gen_dir='./simul_data/simul_'+str(simul_id)+'/gen_'+str(gen_id)
     

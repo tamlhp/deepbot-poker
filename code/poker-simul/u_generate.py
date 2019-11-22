@@ -26,11 +26,11 @@ from multiprocessing import Pool
 import os
 from functools import reduce
 from collections import OrderedDict
-from neuroevolution import get_flat_params
+from u_formatting import get_flat_params
 
 ### GENERATE RANDOM BOTS ###
 #Necessary for first generation
-def gen_rand_bots(simul_id, gen_id, log_dir = './simul_data', overwrite=True, nb_bots=50, network='first'):
+def gen_rand_bots(simul_id, gen_id, log_dir = './simul_data', overwrite=True, ga_popsize=50, network='first'):
     #create dir for generation
     gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
     if not os.path.exists(gen_dir):
@@ -41,13 +41,14 @@ def gen_rand_bots(simul_id, gen_id, log_dir = './simul_data', overwrite=True, nb
         ### GENERATE ALL BOTS ####
     if overwrite == True or not os.path.exists(gen_dir+'/bots/'+str(1)+'/bot_'+str(1)+'_flat.pkl'):
         full_dict = None
-        for bot_id in range(1,nb_bots+1): #there are usually 50 bots
+        for bot_id in range(1,ga_popsize+1): #there are usually 50 bots
             if not os.path.exists(gen_dir+'/bots/'+str(bot_id)):
                 os.makedirs(gen_dir+'/bots/'+str(bot_id))
             lstm_bot = LSTMBot(id_= bot_id, full_dict=full_dict, gen_dir = gen_dir, network=network)
             with open(gen_dir+'/bots/'+str(lstm_bot.id)+'/bot_'+str(lstm_bot.id)+'_flat.pkl', 'wb') as f:
                 pickle.dump(get_flat_params(lstm_bot.full_dict), f, protocol=0)
     return
+
 
 ### GENERATE ALL DECKS OF A GENERATION ####
 def gen_decks(gen_dir, overwrite = True, nb_hands = 300,  nb_cards = 52, nb_games = 1):

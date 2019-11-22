@@ -14,7 +14,7 @@ import math
 ###CONSTANTS
 
 gen_id=-1
-nb_bots= 1
+ga_popsize= 1
 log_dir = '../../../backed_simuls/'
 #log_dir = './simul_data/'
 sb_amount = 50

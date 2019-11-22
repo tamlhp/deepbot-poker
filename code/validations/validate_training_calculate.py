@@ -40,19 +40,19 @@ if my_network=='second':
     opponent_tables=['call_bot','conservative_bot','equity_bot','maniac_bot']
     my_normalize=True
     nb_opps=4
-    nb_bots= 60
+    ga_popsize= 60
     nb_gens = 250
 elif my_network=='6max_full':
     opponent_tables=['call_bot','conservative_bot','maniac_bot','pstrat_bot']
     my_normalize=True
     nb_opps=4
-    nb_bots= 70
+    ga_popsize= 70
     nb_gens=250
 elif my_network=='6max_single':
     opponent_tables=['pstrat_bot_1']
     my_normalize=False
     nb_opps=1
-    nb_bots= 70
+    ga_popsize= 70
     nb_gens=250
 
 if __name__ == '__main__':
@@ -77,16 +77,16 @@ if __name__ == '__main__':
         gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
         
         ## ELITE EARNINGS
-        for i in range(nb_bots):    
+        for i in range(ga_popsize):    
             with open(gen_dir+'/bots/'+str(i+1)+'/earnings.pkl', 'rb') as f:  
                 earnings = pickle.load(f)
                 all_earnings.append(earnings)
-        ANEs = compute_ANE(all_earnings=all_earnings, BB=BB, nb_bots=nb_bots, nb_opps=nb_opps, normalize=normalize)
+        ANEs = compute_ANE(all_earnings=all_earnings, BB=BB, ga_popsize=ga_popsize, nb_opps=nb_opps, normalize=normalize)
         ord_bot_ids = [el+1 for el in sorted(range(len(ANEs)), key=lambda i:ANEs[i], reverse=True)]
 
         #SELECTING SURVIVORS
         surv_perc = 0.3
-        surv_bot_ids = ord_bot_ids[:int(surv_perc*nb_bots)]  
+        surv_bot_ids = ord_bot_ids[:int(surv_perc*ga_popsize)]  
      
         surv_ANEs = [ANEs[i-1] for i in surv_bot_ids]
         

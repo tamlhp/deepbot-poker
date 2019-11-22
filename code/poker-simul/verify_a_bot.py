@@ -22,7 +22,8 @@ import time
 import pickle
 from utils_simul import gen_decks, gen_rand_bots, run_one_game_rebuys
 from functools import reduce
-from neuroevolution import get_full_dict, mutate_bots
+from u_formatting import get_full_dict
+from u_neuroevolution import mutate_bots
 import random
 import numpy as np
 
@@ -113,7 +114,7 @@ print(my_game_results)
 
 
 """
-nb_bots= 1
+ga_popsize= 1
 simul_id = 0
 log_dir = './simul_data'
 sb_amount = 50
@@ -150,7 +151,7 @@ print(earnings)
 #backed_gen_dir = '../../../backed_simuls/simul_10/gen_298'
 
 ## prepare first gen lstm bots and decks
-#gen_rand_bots(simul_id = simul_id, gen_id=0, log_dir=log_dir, nb_bots = nb_bots)
+#gen_rand_bots(simul_id = simul_id, gen_id=0, log_dir=log_dir, ga_popsize = ga_popsize)
 #gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = 500)
 
 

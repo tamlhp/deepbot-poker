@@ -54,7 +54,7 @@ def init():
     bet_value_box = Button(id_='Bet_value_box', image_file=constants.MENU_IMAGE_PATH+'bet_value_box.png', detection_confidence = 0.95)
 
     global dealer_button
-    dealer_button = DealerButton(id_='Dealer_button', image_file='../../data/images/dealer_button.png', detection_confidence = 0.95)
+    dealer_button = DealerButton(id_='Dealer_button', image_file='../../data/api-images/dealer_button.png', detection_confidence = 0.95)
 
 
     #Creating card relative variable

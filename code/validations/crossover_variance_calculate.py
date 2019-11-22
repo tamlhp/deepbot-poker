@@ -21,7 +21,7 @@ nb_cards = 52
 nb_hands = 500
 
 ###CONSTANTS
-nb_bots= 1
+ga_popsize= 1
 simul_id = '-3_cross'
 log_dir = '../../../backed_simuls'
 sb_amount = 50

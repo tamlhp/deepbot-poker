@@ -51,13 +51,13 @@ simul_id = 0 ## simul id
 gen_id = 0 ## gen id
 gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
 
-nb_bots = 50
+ga_popsize = 50
 nb_hands = 1
 sb_amount = 50
 
 
 
-#selection_gen_bots(log_dir, simul_id, gen_id, BB=2*sb_amount, nb_bots = 50)
+#selection_gen_bots(log_dir, simul_id, gen_id, BB=2*sb_amount, ga_popsize = 50)
 
 
 import multiprocessing as mp

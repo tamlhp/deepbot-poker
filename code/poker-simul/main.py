@@ -21,7 +21,7 @@ import time
 import pickle
 from utils_simul import gen_decks, gen_rand_bots
 from functools import reduce
-from neuroevolution import get_full_dict
+from u_formatting import get_full_dict
 import random
 
 nb_cards = 52
@@ -46,11 +46,11 @@ for i in range(1):
 
 
     gen_dir='./simul_data/simul_0/gen_0'
-    
-    with open(gen_dir+'/cst_decks.pkl', 'rb') as f:  
+
+    with open(gen_dir+'/cst_decks.pkl', 'rb') as f:
         cst_decks = pickle.load(f)
     #backed_gen_dir = '../../../backed_simuls/simul_11/gen_30'
-    with open(gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:  
+    with open(gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
         lstm_bot_flat = pickle.load(f)
         lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
         lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
@@ -65,7 +65,7 @@ for i in range(1):
     config.register_player(name="p-5", algorithm=chosenBot())
     config.register_player(name="lstm_bot", algorithm=lstm_bot)
     #config.register_player(name="p6", algorithm=CallBot())
-    
+
     plays_per_blind=90
     blind_structure={0*plays_per_blind:{'ante':0, 'small_blind':10},\
                      1*plays_per_blind:{'ante':0, 'small_blind':15},\
@@ -79,7 +79,7 @@ for i in range(1):
                      9*plays_per_blind:{'ante':75, 'small_blind':600},\
             }
     config.set_blind_structure(blind_structure)
-    
+
     game_result, last_two_players = start_poker(config, verbose=0, cheat = True,cst_deck_ids = cst_decks.copy(), return_last_two = True)
     time_2 = time.time()
     #print(str(time_2-time_1))
@@ -93,7 +93,7 @@ for i in range(1):
         if game_result['players'][5]['stack']>0:
             my_game_results=3
     print(my_game_results)
-    
+
 """
 
 opp_tables = [[CallBot, CallBot, CallBot, ConservativeBot, PStratBot],
@@ -117,7 +117,7 @@ sb_amount=10
 
 gen_dir='./simul_data/simul_0/gen_0'
 
-with open(gen_dir+'/cst_decks.pkl', 'rb') as f:  
+with open(gen_dir+'/cst_decks.pkl', 'rb') as f:
     cst_decks = pickle.load(f)
 
 plays_per_blind=90
@@ -136,7 +136,7 @@ blind_structure={0*plays_per_blind:{'ante':0, 'small_blind':10},\
 earnings = OrderedDict()
 ## for each bot to oppose
 for table_ind in range(4):
-    lstm_bot.clear_log()        
+    lstm_bot.clear_log()
     my_game_results = [] # [[-1,]*nb_players_6max,].copy()*nb_full_games_per_opp
     #config = []#[0,]*nb_players_6max*nb_full_games_per_opp
     for full_game_id in range(nb_full_games_per_opp):

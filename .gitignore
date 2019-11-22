@@ -1,3 +1,7 @@
+# data
+/data/simul_data/
+/data/analysis_data/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

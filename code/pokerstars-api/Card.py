@@ -29,7 +29,7 @@ class Card():
 
         self.value_detection_confidence = 0.75
         self.hero_deg = {'right':315, 'left':240}
-        self.card_values_path = "../../data/images/cards/values/"
+        self.card_values_path = "../../data/api-images/cards/values/"
         self.size_ref = [80,80]
         self.relevant_box = Box(box.left-constants.CARD_REDET_TOL, box.top-constants.CARD_REDET_TOL, box.width+2*constants.CARD_REDET_TOL, box.height+2*constants.CARD_REDET_TOL)
         #self.redetection_tolerance = 20
@@ -49,7 +49,7 @@ class Card():
         #table_img_portion.show()
         for i, card_color in enumerate(card_colors):
             try:
-                box_relative = pyautogui.locate('../../data/images/cards/card_'+card_color+'.png', table_img_portion, confidence=0.9)
+                box_relative = pyautogui.locate('../../data/api-images/cards/card_'+card_color+'.png', table_img_portion, confidence=0.9)
 
                 #print(box)
                 if(box_relative!=None):

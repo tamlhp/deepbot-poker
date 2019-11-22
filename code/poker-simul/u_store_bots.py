@@ -51,10 +51,10 @@ def prep_gen_dirs(dir_):
     if not os.path.exists(dir_+'/bots'):
         os.makedirs(dir_+'/bots')
 
-def get_gen_flat_params(dir_, nb_bots = 50):
-    #TODO, remove nb_bots argument (read all files automaticaly)
+def get_gen_flat_params(dir_, ga_popsize = 50):
+    #TODO, remove ga_popsize argument (read all files automaticaly)
     all_gen_flat = []
-    for bot_id in range(1,nb_bots+1):
+    for bot_id in range(1,ga_popsize+1):
         with open(dir_+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
             params_flat = pickle.load(f)
             all_gen_flat.append(params_flat)

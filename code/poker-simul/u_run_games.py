@@ -13,6 +13,7 @@ mkl.set_num_threads(1)
 import sys
 sys.path.append('../PyPokerEngine/')
 sys.path.append('../poker-simul/')
+sys.path.append('./bots/')
 from pypokerengine.api.game import setup_config, start_poker
 from bot_CallBot import CallBot
 from bot_ConservativeBot import ConservativeBot
@@ -29,12 +30,12 @@ from multiprocessing import Pool
 import os
 from functools import reduce
 from collections import OrderedDict
-from neuroevolution import get_flat_params
+from u_formatting import get_full_dict
 
 nb_players_6max = 6
 
-def run_generation_games(nb_bots, my_network, my_timeout, train_env, lstm_bot, cst_decks, ini_stack, sb_amount, nb_hands):
-    for bot_id in range(1,nb_bots+1):
+def run_generation_games(ga_popsize, my_network, my_timeout, train_env, lstm_bot, cst_decks, ini_stack, sb_amount, nb_hands):
+    for bot_id in range(1,ga_popsize+1):
         #Load the bot
         with open(gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
             lstm_bot_flat = pickle.load(f)
@@ -83,9 +84,11 @@ def run_games(train_env, lstm_bot, cst_decks, ini_stack=1500, sb_amount=10, nb_h
         run_one_game_6max_single(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)
     elif train_env=='6max_sng_mixed':
         run_one_game_6max_full(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)
+    elif train_env=='fake':
+        earnings = run_one_game_fake()
     else:
         print('[run_games] ERROR: train_env not recognized')
-    return
+    return earnings
 
 def run_one_game_reg(simul_id , gen_id, lstm_bot, verbose=False, cst_decks=None, nb_sub_matches =10):
     mkl.set_num_threads(1)
@@ -303,6 +306,12 @@ def run_one_game_6max_single(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amou
         return earnings, lstm_ranks
 
 
+def run_one_game_fake():
+    earnings = OrderedDict()
+    nb_full_games_per_opp = 4
+    for table_ind in range(4):
+        earnings['fake_opp'+str(table_ind)] = random.randint(-1,3)
+    return earnings
 
 def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount = 10, opponents = 'default', verbose=False, cst_decks=None, is_validation=False):
     mkl.set_num_threads(1)
@@ -381,7 +390,7 @@ def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount
             print('Time taken:' +str(time_2-time_1))
             print('game results' +str(my_game_results))
 
-        earnings[opp_names[table_ind]] =np.average(my_game_results)
+        #earnings[opp_names[table_ind]] =np.average(my_game_results)
 
         if is_validation:
             lstm_ranks[opp_names[table_ind]] = my_lstm_ranks
