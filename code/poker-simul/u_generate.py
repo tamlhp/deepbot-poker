@@ -30,9 +30,8 @@ from u_formatting import get_flat_params
 
 ### GENERATE RANDOM BOTS ###
 #Necessary for first generation
-def gen_rand_bots(simul_id, gen_id, log_dir = './simul_data', overwrite=True, ga_popsize=50, network='first'):
+def gen_rand_bots(gen_dir, network='first', ga_popsize=50, overwrite=True):
     #create dir for generation
-    gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
     if not os.path.exists(gen_dir):
         os.makedirs(gen_dir)
 
@@ -51,7 +50,7 @@ def gen_rand_bots(simul_id, gen_id, log_dir = './simul_data', overwrite=True, ga
 
 
 ### GENERATE ALL DECKS OF A GENERATION ####
-def gen_decks(gen_dir, overwrite = True, nb_hands = 300,  nb_cards = 52, nb_games = 1):
+def gen_decks(gen_dir, nb_hands = 300, nb_games = 1,  nb_cards = 52, overwrite = True):
     """
     gen_dir: directory of the generation ; type=string
     overwrite: whether to overwrite pre-existant decks if necessary ; type = boolean

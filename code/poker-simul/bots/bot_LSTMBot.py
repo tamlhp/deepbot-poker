@@ -43,7 +43,7 @@ class LSTMBot(BasePokerPlayer):
             full_dict_ = self.state_dict.copy()
             full_dict_.update(i_opp), full_dict_.update(i_gen)
             if self.network == '6max_full':
-                full_dict_=reduce_full_dict(full_dict_)
+                full_dict_= extend_full_dict(full_dict_)
             self.full_dict = full_dict_
         else:
             #print(full_dict['opp_game_h0_0_0'])

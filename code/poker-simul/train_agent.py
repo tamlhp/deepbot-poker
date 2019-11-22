@@ -26,7 +26,8 @@ import argparse
 
 
 if __name__ == '__main__':
-    #PARSE ARGUMENTS
+
+    """ #### PARSE ARGUMENTS, AND PROCESS #### """
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--simul_id', default = -1, type=int, help='Id of the simulation. Should be defined to avoid overwriting past simulations.')
     parser.add_argument('--redis_host',  default='local', type=str, help='Address of redis host. [local, ec2, *]')
@@ -42,7 +43,6 @@ if __name__ == '__main__':
     parser.add_argument('--log_dir', default='../../data/simul_data', type=str, help='The path of the file where the simulation data will be stored.')
     parser.add_argument('--train_env', default='fake', type=str, help='Environment used in training (table size, game type and opponents) [hu_cash_mixed, 6max_sng_ruler, 6max_sng_mixed]')
     parser.add_argument('--verbose', default=True, type= bool, help = 'Whether to print detailled run time information.')
-
     parser.add_argument('--nb_opps', default=4, type=int, help= 'Number of different tables against which to train')
 
 
@@ -82,26 +82,34 @@ if __name__ == '__main__':
         elif my_network =='6max_full':
             train_env = '6max_sng_mixed'
 
-    ## Start redis host and clear queue
+    """ #### SETTING UP #### """
+
+    # Start redis host and clear queue
     redis = Redis(REDIS_HOST)
     q = Queue(connection=redis, default_timeout=my_timeout)
     for j in q.jobs:
         j.cancel()
 
-    ## Neural network layer size reference
+    # Neural network layer size reference
     lstm_ref = LSTMBot(network=my_network) #TODO, see if movable
 
-    print('## Starting new simulations ##')
-
     if ini_gen==0:
-        ## Generate first generation of bots (=agents) randomly
-        gen_rand_bots(simul_id = simul_id, gen_id=ini_gen, log_dir=log_dir, ga_popsize = ga_popsize, overwrite=False,
-                      network=my_network)
+    # if this is a new simulation (not resuming one)
+        # Write configuration details to text file
+        file = open(log_dir+'/simul_'+str(simul_id)+"/configuration_details.txt",'w')
+        file.write("## CONFIGURATION DETAILS ## \n \n")
+        file.write(str(args))
+        file.close()
+        # Generate the first generation of bots randomly
+        gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(ini_gen)
+        gen_rand_bots(gen_dir, network=my_network, ga_popsize = ga_popsize, overwrite=False)
+
+    """ #### STARTING SIMULATIONS #### """
+    if verbose: print('## Starting new simulations ##')
     for gen_id in range(ini_gen, nb_generations):
-        if verbose:
-            print('\n Starting generation: ' + str(gen_id))
+        if verbose: print('\n Starting generation: ' + str(gen_id))
+        #Define generation's directory. Create one except if already existing
         gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
-        #Define generation's directory. Create except if already existing
         if not os.path.exists(gen_dir):
             os.makedirs(gen_dir)
         #Empty jobs list
@@ -169,7 +177,7 @@ if __name__ == '__main__':
         if verbose: print('Running games took '+str(time_end_games-time_start_games) +' seconds.')
 
 
-        """####  PREPARE NEXT GENERATION / EVOLUTION ####"""
+        """#### EVOLUTION /PREPARE NEXT GENERATION ####"""
         time_start_evo = time.time()
         gen_flat_params = get_gen_flat_params(dir_=gen_dir, ga_popsize=ga_popsize)
         next_gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id+1)
