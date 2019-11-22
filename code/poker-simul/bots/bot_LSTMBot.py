@@ -287,82 +287,40 @@ class LSTMBot(BasePokerPlayer):
 
             #print(inputs)
             if len(network.split('_'))>1:
-                if True:
-                    #NEW VERSION#
-                    if network.split('_')[1] == 'full':
-                        nb_opps=5
-                        nb_feats=5
-                        opp_ids = [1,2,3,4,5,6]
-                        opp_ids.remove(int(self.uuid.split('-')[1]))
-                        opp_input_size=nb_opps*nb_feats
-                        opp_inputs=[0,]*opp_input_size
-                        for i in range(nb_opps):
-                            opp_last_amount= comp_last_amount_opp(round_state=round_state,my_uuid='uuid-'+str(opp_ids[i]))
-                            for player in round_state['seats']:
-                                if player['name']=='p-'+str(opp_ids[i]):
-                                    #setting active / unactive bit
-                                    opp_inputs[0+i*nb_feats]= not(player['state']=='folded')*1
-                                    break
+                if network.split('_')[1] == 'full':
+                    nb_opps=5
+                    nb_feats=5
+                    opp_ids = [1,2,3,4,5,6]
+                    opp_ids.remove(int(self.uuid.split('-')[1]))
+                    opp_input_size=nb_opps*nb_feats
+                    opp_inputs=[0,]*opp_input_size
+                    for i in range(nb_opps):
+                        opp_last_amount= comp_last_amount_opp(round_state=round_state,my_uuid='uuid-'+str(opp_ids[i]))
+                        for player in round_state['seats']:
+                            if player['name']=='p-'+str(opp_ids[i]):
+                                #setting active / unactive bit
+                                opp_inputs[0+i*nb_feats]= not(player['state']=='folded')*1
+                                break
 
-                            for k, action in enumerate(round_state['action_histories'][round_state['street']][::-1]):
-                                if action['uuid']==self.uuid:
-                                    break
-                                elif action['uuid']=='uuid-'+str(opp_ids[i]):
-                                    if action['action']=='FOLD':
-                                        amount=0
-                                    else:
-                                        amount=action['amount']
-                                    #opponents paid amount
-                                    if action['action'] not in ['SMALLBLIND','BIGBLIND']:
-                                        opp_inputs[1+i*nb_feats]=(amount-opp_last_amount)/self.i_stack
-                                    if action['action']=='RAISE':
-                                        opp_inputs[2+i*nb_feats]=1
-                                    elif action['action']=='CALL':
-                                        opp_inputs[3+i*nb_feats]=1
-                                    elif action['action']=='FOLD':
-                                        opp_inputs[4+i*nb_feats]=1
-                                    break
-                        inputs=inputs+opp_inputs
-
-                else:
-                #OLD VERSION#
-                    if network.split('_')[1] == 'full':
-                        nb_opps=5
-                        nb_feats=5
-                        opp_ids = [1,2,3,4,5,6]
-                        opp_ids.remove(int(self.uuid.split('-')[1]))
-                        opp_input_size=nb_opps*nb_feats
-                        opp_inputs=[0,]*opp_input_size
-                        nb_folded_since=0
-                        for i in range(nb_opps):
-                            opp_last_amount= comp_last_amount_opp(round_state=round_state,my_uuid='uuid-'+str(opp_ids[i]))
-                            for player in round_state['seats']:
-                                if player['name']=='p-'+str(opp_ids[i]):
-                                    #setting active / unactive bit
-                                    opp_inputs[0+i*nb_feats]= not(player['state']=='folded')*1
-                                    ###opponents stack
-                                    opp_inputs[1+i*nb_feats]=player['stack']/self.i_stack
-                                    break
-
-                            for k, action in enumerate(round_state['action_histories'][round_state['street']][::-1]):
-                                if action['uuid']==self.uuid:
-                                    break
-                                elif action['uuid']=='uuid-'+str(opp_ids[i]):
-                                    street_amount = max([action['amount'] for action in round_state['action_histories'][round_state['street']][::-1][(k+1):] if action['action']!='FOLD']+[0])
-                                    if action['action']=='FOLD':
-                                        amount=0
-                                    else:
-                                        amount=action['amount']
-                                    #opponents paid amount
-                                    opp_inputs[2+i*nb_feats]=(amount-opp_last_amount)/self.i_stack
-                                    #opponents faced call price
-                                    opp_inputs[3+i*nb_feats]=(street_amount-opp_last_amount)/self.i_stack
-                                    nb_folded_since= sum([action['action']=='FOLD' for action in round_state['action_histories'][round_state['street']][::-1][:k+1]])
-                                    break
-                            #nb opponent players
-                            if opp_inputs[0+i*nb_feats]==1:
-                                opp_inputs[4+i*nb_feats]= (n_act_players-1+nb_folded_since)/self.num_players
-                        inputs=inputs+opp_inputs
+                        for k, action in enumerate(round_state['action_histories'][round_state['street']][::-1]):
+                            if action['uuid']==self.uuid:
+                                break
+                            elif action['uuid']=='uuid-'+str(opp_ids[i]):
+                                if action['action']=='FOLD':
+                                    amount=0
+                                else:
+                                    amount=action['amount']
+                                #opponents paid amount
+                                if action['action'] not in ['SMALLBLIND','BIGBLIND']:
+                                    opp_inputs[1+i*nb_feats]=(amount-opp_last_amount)/self.i_stack
+                                if action['action']=='RAISE':
+                                    opp_inputs[2+i*nb_feats]=1
+                                elif action['action']=='CALL':
+                                    opp_inputs[3+i*nb_feats]=1
+                                elif action['action']=='FOLD':
+                                    opp_inputs[4+i*nb_feats]=1
+                                break
+                    inputs=inputs+opp_inputs
 
 
         return torch.Tensor(inputs).view(1, 1, -1)

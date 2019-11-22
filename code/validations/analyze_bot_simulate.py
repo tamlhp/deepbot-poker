@@ -46,7 +46,7 @@ write_details= True
 if my_network =='6max_single' or my_network=='6max_full':
     for i in range(1000):
         print('starting match '+str(i))
-        nb_decks = 1
+        nb_games = 1
         gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = nb_hands, overwrite=True)
         lstm_ref = LSTMBot(None,network=my_network)
         

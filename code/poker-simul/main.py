@@ -7,6 +7,7 @@ Created on Fri Mar 22 14:30:41 2019
 """
 import sys
 sys.path.append('../PyPokerEngine')
+sys.path.append('bots/')
 from pypokerengine.api.game import setup_config, start_poker
 from bot_TestBot import TestBot
 from bot_CallBot import CallBot
@@ -19,7 +20,7 @@ from bot_CandidBot import CandidBot
 from bot_ConservativeBot import ConservativeBot
 import time
 import pickle
-from utils_simul import gen_decks, gen_rand_bots
+from u_generate import gen_decks, gen_rand_bots
 from functools import reduce
 from u_formatting import get_full_dict
 import random
@@ -111,11 +112,11 @@ bot_id = 1
 lstm_bot = LSTMBot(network=my_network)
 
 log_dir = './simul_data'
-gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = 500, overwrite=True, nb_decks=16)
+gen_dir='./simul_data/simul_0/gen_0'
+gen_decks(gen_dir=gen_dir,nb_hands = 500, overwrite=True, nb_games=16)
 ini_stack=1500
 sb_amount=10
 
-gen_dir='./simul_data/simul_0/gen_0'
 
 with open(gen_dir+'/cst_decks.pkl', 'rb') as f:
     cst_decks = pickle.load(f)
