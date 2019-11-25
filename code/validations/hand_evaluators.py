@@ -6,7 +6,8 @@ Created on Fri Mar 22 14:37:11 2019
 @author: cyril
 """
 
-
+""" This file compares the speed of three different methods that compute the equity of a hand:
+    OMPEval, Deuces, and PyPokerEngine"""
 
 import sys
 sys.path.append("..")
@@ -65,7 +66,7 @@ def deuces_montecarlo_simulation(nb_player, hole_card, board):
     for card in hole_card+board:
         deck.remove_card(card)
     board_full = board + deck.draw(5-len(board))
-    opponents_hole = [deck.draw(2) for i in range(nb_player - 1)]#[unused_cards[2 * i:2 * i + 2] 
+    opponents_hole = [deck.draw(2) for i in range(nb_player - 1)]#[unused_cards[2 * i:2 * i + 2]
     opponents_score = [evaluator.evaluate(board_full, hole) for hole in opponents_hole]#[HandEvaluator.eval_hand(hole, community_card) for hole in opponents_hole]
     my_score = evaluator.evaluate(board_full, hole_card)#HandEvaluator.eval_hand(hole_card, community_card)
     return 1 if my_score < min(opponents_score) else 0
@@ -93,14 +94,14 @@ for _ in range (nb_simulations):
     evaluator.evaluate(board_full, hole_card)
 time_2 = time.time()
 eval_per_sec = nb_simulations / (time_2-time_1)
-print("Speed: "+ str(eval_per_sec*10**-3)+" [kEval/s]") 
+print("Speed: "+ str(eval_per_sec*10**-3)+" [kEval/s]")
 
 
 ##### PYPOKERENGINE #####
 print('### PYPOKERENGINE ###')
 from pypokerengine.engine.hand_evaluator import HandEvaluator
 from pypokerengine.utils.card_utils import _pick_unused_card, _fill_community_card, gen_cards
-      
+
 # Estimate the ratio of winning games given the current state of the game
 def estimate_win_rate(nb_simulation, nb_player, hole_card, community_card=None):
     if not community_card: community_card = []
@@ -122,9 +123,9 @@ def montecarlo_simulation(nb_player, hole_card, community_card):
     opponents_hole = [unused_cards[2 * i:2 * i + 2] for i in range(nb_player - 1)]
     opponents_score = [HandEvaluator.eval_hand(hole, community_card) for hole in opponents_hole]
     my_score = HandEvaluator.eval_hand(hole_card, community_card)
-    return 1 if my_score > max(opponents_score) else 0      
-      
-    
+    return 1 if my_score > max(opponents_score) else 0
+
+
 hole_card = ['S9','SK']
 board = ['D8','HA','HK']
 nb_players = 6
@@ -147,4 +148,4 @@ for _ in range (nb_simulations):
     HandEvaluator.eval_hand(hole_card, board_full)
 time_2 = time.time()
 eval_per_sec = nb_simulations / (time_2-time_1)
-print("Speed: "+ str(eval_per_sec*10**-3)+" [kEval/s]") 
+print("Speed: "+ str(eval_per_sec*10**-3)+" [kEval/s]")

@@ -33,8 +33,6 @@ def select_next_gen_bots(log_dir, simul_id, gen_id, all_earnings, BB, ga_popsize
     surv_perc = 0.3
     surv_bot_ids = ord_bot_ids[:int(surv_perc*ga_popsize)]
     surv_bots_flat = []
-    print(len(surv_bot_ids))
-    print(gen_flat_params)
     for bot_id in surv_bot_ids:
         surv_bot_flat = gen_flat_params[bot_id-1]
         surv_bots_flat.append(surv_bot_flat)

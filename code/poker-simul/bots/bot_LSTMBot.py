@@ -285,7 +285,7 @@ class LSTMBot(BasePokerPlayer):
             inputs[11] = 2*round_state['small_blind_amount']/self.i_stack
 
 
-            #print(inputs)
+            ##preparer opponent modelling inputs
             if len(network.split('_'))>1:
                 if network.split('_')[1] == 'full':
                     nb_opps=5
@@ -327,9 +327,10 @@ class LSTMBot(BasePokerPlayer):
 
 
     def clear_log(self):
-        for logtype in ['declare_action_state','round_start_state','round_result_state']:
-            if self.gen_dir != None and os.path.exists(self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_'+logtype+'.csv'):
-                os.remove(self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_'+logtype+'.csv')
+        if False:
+            for logtype in ['declare_action_state','round_start_state','round_result_state']:
+                if self.gen_dir != None and os.path.exists(self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_'+logtype+'.csv'):
+                    os.remove(self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_'+logtype+'.csv')
 
     def net_predict(self, input_tensor):
         net_output = self.model(input_tensor)

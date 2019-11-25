@@ -204,8 +204,3 @@ def value_estimator(round_state, strat):
 
     value = randint(1,10)
     return value
-
-
-
-
-

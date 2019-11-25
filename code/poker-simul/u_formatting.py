@@ -5,8 +5,6 @@ Created on Tue May 28 11:30:03 2019
 
 @author: cyril
 """
-import mkl
-mkl.set_num_threads(64)
 import os
 import pickle
 import torch
@@ -41,10 +39,9 @@ def get_dict_sizes(all_dicts):
         dict_sizes[key]['shape'] = list(all_dicts[key].shape)
     return dict_sizes
 
-def get_gen_flat_params(dir_, ga_popsize = 50):
-    #TODO, remove ga_popsize argument (read all files automaticaly)
+def get_gen_flat_params(dir_):
     all_gen_flat = []
-    for bot_id in range(1,ga_popsize+1):
+    for bot_id in os.listdir(dir_+'/bots'):
         with open(dir_+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
             params_flat = pickle.load(f)
             all_gen_flat.append(params_flat)

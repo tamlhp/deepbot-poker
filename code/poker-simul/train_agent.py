@@ -9,7 +9,7 @@ import sys
 sys.path.append('../redis-server/')
 sys.path.append('./bots/')
 from u_generate import gen_rand_bots, gen_decks
-from u_run_games import run_games, FakeJob
+from u_run_games import run_generation_games, run_games, FakeJob
 from u_neuroevolution import select_next_gen_bots, get_best_ANE_earnings, compute_ANE
 from u_formatting import get_full_dict, prep_gen_dirs, get_gen_flat_params
 import pickle
@@ -91,18 +91,18 @@ if __name__ == '__main__':
         j.cancel()
 
     # Neural network layer size reference
-    lstm_ref = LSTMBot(network=my_network) #TODO, see if movable
+    #lstm_ref = LSTMBot(network=my_network) #TODO, see if movable
 
     if ini_gen==0:
     # if this is a new simulation (not resuming one)
+        # Generate the first generation of bots randomly
+        gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(ini_gen)
+        gen_rand_bots(gen_dir, network=my_network, ga_popsize = ga_popsize, overwrite=False)
         # Write configuration details to text file
         file = open(log_dir+'/simul_'+str(simul_id)+"/configuration_details.txt",'w')
         file.write("## CONFIGURATION DETAILS ## \n \n")
         file.write(str(args))
         file.close()
-        # Generate the first generation of bots randomly
-        gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(ini_gen)
-        gen_rand_bots(gen_dir, network=my_network, ga_popsize = ga_popsize, overwrite=False)
 
     """ #### STARTING SIMULATIONS #### """
     if verbose: print('## Starting new simulations ##')
@@ -112,53 +112,15 @@ if __name__ == '__main__':
         gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id)
         if not os.path.exists(gen_dir):
             os.makedirs(gen_dir)
-        #Empty jobs list
-        jobs = []
         #Prepare all decks of the generation
         cst_decks = gen_decks(gen_dir = gen_dir, overwrite=False, nb_hands=nb_hands, nb_games=my_nb_games)
 
         """####  RUN THE GAMES  ####"""
         time_start_games = time.time()
-        #all_earnings = run_generation_games()
-        for bot_id in range(1,ga_popsize+1):
-            #Load the bot
-            with open(gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
-                lstm_bot_flat = pickle.load(f)
-                lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
-                lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
-            #Enqueue job to play bot's games
-            try:
-                jobs.append(q.enqueue(run_games, timeout=my_timeout, kwargs = dict(train_env=train_env, lstm_bot=lstm_bot, cst_decks = cst_decks, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands)))
-            except ConnectionError:
-                print('Currently not connected to redis server')
-                continue
-
-        last_enqueue_time = time.time()
-        # Fetch jobs' statusses every second
-        while True:
-            for i in range(len(jobs)):
-                if jobs[i].result is not None and not isinstance(jobs[i], FakeJob):
-                    jobs[i] = FakeJob(jobs[i])
-            all_earnings = [j.result for j in jobs]
-            time.sleep(1) #1 second
-            # If all jobs are done, break
-            if None not in all_earnings:
-                break
-            # If jobs are not finished after timeout threshold, reenqueue.
-            # Helps when connection occasionaly breaks. May also be the sign of an error in u_run_games.py.
-            if time.time() - last_enqueue_time > my_timeout:
-                print('Reenqueuing unfinished jobs '+ str({sum(x is None for x in all_earnings)}))
-                for i in range(len(jobs)):
-                    if jobs[i].result is None:
-                        try:
-                            jobs[i].cancel()
-                            jobs.append(q.enqueue(run_games, timeout=my_timeout, kwargs = dict(train_env=train_env, lstm_bot=lstm_bot, cst_decks = cst_decks, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands)))
-                        except ConnectionError:
-                            print('Currently not connected to redis server')
-                            continue
-                last_enqueue_time = time.time()
-                #if verbose:
-                    #print("Number of jobs remaining: " + str(sum([all_earnings[i]==None for i in range(len(all_earnings))])))
+        all_earnings = run_generation_games(gen_dir = gen_dir, ga_popsize = ga_popsize, my_network = my_network,
+                                            my_timeout = my_timeout, train_env = train_env, cst_decks=cst_decks,
+                                            ini_stack=ini_stack, sb_amount = sb_amount, nb_hands = nb_hands,
+                                            q = q)
         # Saving earnings
         for i, earnings in enumerate(all_earnings):
             with open(gen_dir+'/bots/'+str(i+1)+'/earnings.pkl', 'wb') as f:
@@ -179,7 +141,7 @@ if __name__ == '__main__':
 
         """#### EVOLUTION /PREPARE NEXT GENERATION ####"""
         time_start_evo = time.time()
-        gen_flat_params = get_gen_flat_params(dir_=gen_dir, ga_popsize=ga_popsize)
+        gen_flat_params = get_gen_flat_params(dir_=gen_dir)
         next_gen_dir = log_dir+'/simul_'+str(simul_id)+'/gen_'+str(gen_id+1)
         prep_gen_dirs(dir_=next_gen_dir)
         next_gen_bots_flat = select_next_gen_bots(log_dir=log_dir, simul_id=simul_id, gen_id=gen_id, all_earnings=all_earnings, BB=2*sb_amount,

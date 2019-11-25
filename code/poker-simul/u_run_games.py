@@ -34,7 +34,11 @@ from u_formatting import get_full_dict
 
 nb_players_6max = 6
 
-def run_generation_games(ga_popsize, my_network, my_timeout, train_env, lstm_bot, cst_decks, ini_stack, sb_amount, nb_hands):
+def run_generation_games(gen_dir, ga_popsize, my_network, my_timeout, train_env, cst_decks, ini_stack, sb_amount, nb_hands, q):
+    # Neural network layer size reference
+    lstm_ref = LSTMBot(network=my_network)
+    #Empty jobs list
+    jobs = []
     for bot_id in range(1,ga_popsize+1):
         #Load the bot
         with open(gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
@@ -72,8 +76,8 @@ def run_generation_games(ga_popsize, my_network, my_timeout, train_env, lstm_bot
                         print('Currently not connected to redis server')
                         continue
             last_enqueue_time = time.time()
-            #if verbose:
-                #print("Number of jobs remaining: " + str(sum([all_earnings[i]==None for i in range(len(all_earnings))])))
+            if verbose:
+                print("Number of jobs remaining: " + str(sum([all_earnings[i]==None for i in range(len(all_earnings))])))
     return all_earnings
 
 
@@ -91,8 +95,8 @@ def run_games(train_env, lstm_bot, cst_decks, ini_stack=1500, sb_amount=10, nb_h
     return earnings
 
 def run_one_game_reg(simul_id , gen_id, lstm_bot, verbose=False, cst_decks=None, nb_sub_matches =10):
+    """old"""
     mkl.set_num_threads(1)
-    #ini_stack=ini_stack/nb_sub_matches
     #CONFIGURATION
     nb_hands = 500
     ini_stack = 2000
