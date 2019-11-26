@@ -16,7 +16,7 @@ def init():
     global CARD_DET_CONFIDENCE
     CARD_DET_CONFIDENCE = 0.9
     global CARD_PATH
-    CARD_PATH = '../../data/api-images/cards/card_'
+    CARD_PATH = '../../data/api-data/cards/card_'
 
     global PLAYER_DET_CONFIDENCE
     PLAYER_DET_CONFIDENCE = 0.92
@@ -25,31 +25,31 @@ def init():
                        {'right':150,'left':70},{'right':70,'left':350},{'right':350,'left':315}]
 
     global MENU_IMAGE_PATH
-    MENU_IMAGE_PATH = "../../data/api-images/menu/"
+    MENU_IMAGE_PATH = "../../data/api-data/menu/"
 
     global PLAYER_IMAGE_PATH
-    PLAYER_IMAGE_PATH = "../../data/api-images/player/"
+    PLAYER_IMAGE_PATH = "../../data/api-data/player/"
 
     global PLAYER_CARDS_OFFSET
     PLAYER_CARDS_OFFSET = [40,120]
 
     global HOLE_CARDS_IMAGE
-    HOLE_CARDS_IMAGE =  "../../data/api-images/hole_cards.png"
+    HOLE_CARDS_IMAGE =  "../../data/api-data/hole_cards.png"
     global HOLE_CARDS_DET_CONFIDENCE
     HOLE_CARDS_DET_CONFIDENCE = 0.75
 
     global NUMBERS_STACK_PATH
-    NUMBERS_STACK_PATH = "../../data/api-images/numbers/stacks/"
+    NUMBERS_STACK_PATH = "../../data/api-data/numbers/stacks/"
     global NUMBERS_STACK_DET_CONFIDENCE
     NUMBERS_STACK_DET_CONFIDENCE = 0.98
 
     global NUMBERS_BET_PATH
-    NUMBERS_BET_PATH = "../../data/api-images/numbers/bets/"
+    NUMBERS_BET_PATH = "../../data/api-data/numbers/bets/"
     global NUMBERS_BET_DET_CONFIDENCE
     NUMBERS_BET_DET_CONFIDENCE = 0.9
 
     global NUMBERS_BUTTON_PATH
-    NUMBERS_BUTTON_PATH = "../../data/api-images/numbers/buttons/"
+    NUMBERS_BUTTON_PATH = "../../data/api-data/numbers/buttons/"
     global NUMBERS_BUTTON_DET_CONFIDENCE
     NUMBERS_BUTTON_DET_CONFIDENCE = 0.9
 

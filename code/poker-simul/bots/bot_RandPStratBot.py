@@ -10,10 +10,9 @@ Created on Wed Apr 17 14:25:26 2019
 from pypokerengine.players import BasePokerPlayer
 from pypokerengine.utils.card_utils import gen_cards
 import math
-#from u_utils import value_estimator, write_declare_action_state, write_round_start_state, write_round_result_state, find_round_id, find_action_id
 from random import randint
 from numpy.random import choice
-from utils_bot import raise_in_limits, fold_in_limits, print_cards, was_raised
+from u_bot import raise_in_limits, fold_in_limits, print_cards, was_raised, define_position
 from utils_io import write_declare_action_state, write_round_start_state, write_round_result_state, find_action_id, find_round_id
 
 
@@ -29,7 +28,7 @@ class DeepBot(BasePokerPlayer): #aka Master Bot  # Do not forget to make parent 
     def declare_action(self, valid_actions, hole_card, round_state):
         # valid_actions format => [raise_action_info, call_action_info, fold_action_info]
         self.hole_card = gen_cards(hole_card)
-        self.pos_group = self.define_position(round_state)
+        self.pos_group = define_position(round_state=round_state, player_id=0, num_players=6)
 
         if my_verbose_upper:
             print_cards(hole_card, round_state)
@@ -133,21 +132,6 @@ class DeepBot(BasePokerPlayer): #aka Master Bot  # Do not forget to make parent 
             print(str(action)+'ing '+str(amount))
 
         return action, amount
-
-    def define_position(self, round_state, player_id = 'Hero'):
-        if player_id=='Hero':
-            rel_pos = (round_state['next_player']-round_state['small_blind_pos'])%self.num_players
-        else:
-            rel_pos = (player_id-round_state['small_blind_pos'])%self.num_players
-        if (rel_pos<=1):
-            pos_group = 'blinds'
-        elif (rel_pos>=self.num_players-2):
-            pos_group = 'late'
-        elif (rel_pos>=self.num_players-5):
-            pos_group = 'middle'
-        else:
-            pos_group = 'early'
-        return pos_group
 
     def hand_in_range(self, hands_max, hands_min, suited = False, pocket=False):
 

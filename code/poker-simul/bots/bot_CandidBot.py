@@ -8,7 +8,7 @@ Created on Tue May 28 15:24:27 2019
 
 
 from pypokerengine.players import BasePokerPlayer
-from utils_bot import comp_hand_equity, decision_algo, comp_n_act_players, comp_is_BB
+from u_bot import comp_hand_equity, decision_algo, comp_n_act_players
 
 class CandidBot(BasePokerPlayer):
     def declare_action(self, valid_actions, hole_card, round_state):
@@ -17,7 +17,7 @@ class CandidBot(BasePokerPlayer):
         o = equity**7
         action, amount = decision_algo(net_output=o, round_state=round_state, valid_actions = valid_actions,
                                        i_stack = self.i_stack, my_uuid = self.uuid, verbose = False)
-        return action, amount   # action returned here is sent to the poker engine
+        return action, amount 
 
     def receive_game_start_message(self, game_info):
         self.i_stack = game_info['rule']['initial_stack']

@@ -8,30 +8,25 @@ Created on Tue May 28 12:12:27 2019
 import sys
 sys.path.append('../redis-server/')
 sys.path.append('./bots/')
-from u_generate import gen_rand_bots, gen_decks
-from u_run_games import run_generation_games, run_games, FakeJob
-from u_neuroevolution import select_next_gen_bots, get_best_ANE_earnings, compute_ANE
-from u_formatting import get_full_dict, prep_gen_dirs, get_gen_flat_params
-import pickle
-import time
 import os
-
+import time
+import pickle
+import argparse
 from redis import Redis
 from rq import Queue
-from bot_LSTMBot import LSTMBot
-import random
-import numpy as np
 from operator import add
-import argparse
+from u_generate import gen_rand_bots, gen_decks
+from u_run_games import run_generation_games
+from u_neuroevolution import select_next_gen_bots, get_best_ANE_earnings
+from u_formatting import prep_gen_dirs, get_gen_flat_params
 
 
 if __name__ == '__main__':
-
     """ #### PARSE ARGUMENTS, AND PROCESS #### """
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--simul_id', default = -1, type=int, help='Id of the simulation. Should be defined to avoid overwriting past simulations.')
     parser.add_argument('--redis_host',  default='local', type=str, help='Address of redis host. [local, ec2, *]')
-    parser.add_argument('--neural_network',  default='6max_full', type=str, help='Neural network architecture to use. [first, second, 6max_single, 6max_full]')
+    parser.add_argument('--neural_network',  default='6max_full', type=str, help='Neural network architecture to use. [hu_first, hu_second, 6max_single, 6max_full]')
     parser.add_argument('--norm_fitfunc', default=True, type=bool, help='Wether to use normalization scheme in the genetic algorithm\'s fitness function.')
     parser.add_argument('--worker_timeout', default=800, type=int, help='Time in seconds before a job taken by a worker and not returned is considered to have timed out.')
     parser.add_argument('--ga_popsize', default=8, type=int, help='Population size of the genetic algorithm.')
@@ -41,7 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--small_blind', default=10, type=int, help='Initial small blind amount. If tournament, the blind structure will overrule.')
     parser.add_argument('--ini_stack', default=1500, type=int, help='Initial stack of the players.')
     parser.add_argument('--log_dir', default='../../data/simul_data', type=str, help='The path of the file where the simulation data will be stored.')
-    parser.add_argument('--train_env', default='fake', type=str, help='Environment used in training (table size, game type and opponents) [hu_cash_mixed, 6max_sng_ruler, 6max_sng_mixed]')
+    parser.add_argument('--train_env', default='default', type=str, help='Environment used in training (table size, game type and opponents) [hu_cash_mixed, 6max_sng_ruler, 6max_sng_mixed]')
     parser.add_argument('--verbose', default=True, type= bool, help = 'Whether to print detailled run time information.')
     parser.add_argument('--nb_opps', default=4, type=int, help= 'Number of different tables against which to train')
 
@@ -71,11 +66,11 @@ if __name__ == '__main__':
     nb_opps = args.nb_opps #TODO, move to simul arch def
     my_nb_games = nb_opps*4 #TODO, move to simul arch def
 
-    if my_network in ['first','second']: #TODO handle differently.
+    if my_network in ['hu_first','hu_second']: #TODO handle differently.
         my_nb_games=1
 
     if train_env == 'default':
-        if my_network in ['first','second']:
+        if my_network in ['hu_first','hu_second']:
             train_env = 'hu_cash_mixed'
         elif my_network == '6max_single':
             train_env = '6max_sng_ruler'
@@ -89,9 +84,6 @@ if __name__ == '__main__':
     q = Queue(connection=redis, default_timeout=my_timeout)
     for j in q.jobs:
         j.cancel()
-
-    # Neural network layer size reference
-    #lstm_ref = LSTMBot(network=my_network) #TODO, see if movable
 
     if ini_gen==0:
     # if this is a new simulation (not resuming one)
@@ -128,15 +120,15 @@ if __name__ == '__main__':
         if verbose:
             ## Getting best earnings
             best_earnings = get_best_ANE_earnings(all_earnings = all_earnings, BB=2*sb_amount, ga_popsize = ga_popsize, nb_opps=nb_opps,normalize=my_normalize)
-            print('The best agent has the following scores: ' + str(best_earnings))
+            print("Best agent score: {}".format(["%.2f" % earning for earning in best_earnings.values()]))
             # Getting average earning of lstm agents
             avg_earnings=[0,]*len(all_earnings[0].values())
             for i in range(ga_popsize):
                 avg_earnings= list(map(add, avg_earnings, all_earnings[i].values()))
             avg_earnings= [el/ga_popsize for el in avg_earnings]
-            print('The agents won on average: ' +str(avg_earnings))
+            print("Average agent's scores: {}".format(["%.2f" % earning for earning in avg_earnings]))
         time_end_games = time.time()
-        if verbose: print('Running games took '+str(time_end_games-time_start_games) +' seconds.')
+        if verbose: print("Running games took {:.0f} seconds.".format(time_end_games-time_start_games))
 
 
         """#### EVOLUTION /PREPARE NEXT GENERATION ####"""
@@ -154,4 +146,4 @@ if __name__ == '__main__':
             with open(next_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'wb') as f:
                 pickle.dump(lstm_bot_flat, f)
         time_end_evo = time.time()
-        if verbose: print('Evolution took '+str(time_end_evo-time_start_evo) +' seconds.')
+        if verbose: print("Evolution took {:.0f} seconds.".format(time_end_evo-time_start_evo))

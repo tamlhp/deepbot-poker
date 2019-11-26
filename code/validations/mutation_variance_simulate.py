@@ -58,7 +58,7 @@ for gen_id in range(nb_dif_bots):
         cst_decks = pickle.load(f)
     with open(gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:  
         lstm_bot_flat = pickle.load(f)
-        lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
+        lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, ref_full_dict = ref_full_dict)
         lstm_bot = LSTMBot(id_=bot_id, gen_dir = gen_dir, full_dict = lstm_bot_dict, network=my_network, validation_mode = 'mutation_variance', validation_id=validation_id)
     while True:
         config = setup_config(max_round=max_round, initial_stack=3000, small_blind_amount=50)
@@ -94,7 +94,7 @@ for i in range(nb_measures-1):
         #lsmt_bot_full_dict=get_full_dict(all_params=lstm_bot_flat,m_sizes_ref=lstm_ref)
         mutant_flat = mutate_bots(orig_bots_flat=[lstm_bot_flat], nb_new_bots=1, 
                                                   mut_rate=mutation_rate, mut_strength=mutation_strength)[0]
-        mutant_dict = get_full_dict(all_params = mutant_flat, m_sizes_ref = lstm_ref)
+        mutant_dict = get_full_dict(all_params = mutant_flat, ref_full_dict = ref_full_dict)
         mutant_bot = LSTMBot(id_=bot_id, gen_dir = gen_dir, full_dict = mutant_dict, network=my_network, validation_mode = 'mutation_variance', validation_id=validation_id)
         while True:
             config = setup_config(max_round=max_round, initial_stack=3000, small_blind_amount=50)

@@ -11,7 +11,7 @@ from pypokerengine.engine.hand_evaluator import HandEvaluator
 from pypokerengine.players import BasePokerPlayer
 from pypokerengine.utils.card_utils import _pick_unused_card, _fill_community_card, gen_cards
 import math
-from utils_bot import raise_in_limits, fold_in_limits, is_strong_flush_draw, is_strong_straight_draw, was_raised, print_cards
+from u_bot import raise_in_limits, fold_in_limits, is_strong_flush_draw, is_strong_straight_draw, was_raised, print_cards, define_position
 
 #import itertools
 
@@ -33,47 +33,11 @@ class PStratBot(BasePokerPlayer):
 
     #  we define the logic to make an action through this method. (so this method would be the core of your AI)
     def declare_action(self, valid_actions, hole_card, round_state):
-        # valid_actions format => [raise_action_info, call_action_info, fold_action_info]
-        #print(str(round_state) + '\n')
-        #hole_card = ['DK', 'HJ']
-        #round_state['community_card'] = ['HK', 'S8', 'DQ']
-
-        """
-        print("hole_card:" + str(hole_card))
-        print("valid_actions:"+ str(valid_actions))
-        print("round_state:"+str(round_state))
-        """
-        """
-        #DEBUGGING
-        valid_actions = [{'action': 'fold', 'amount': 0}, {'action': 'call', 'amount': 100}, {'action': 'raise', 'amount': {'min': 150, 'max': 10000}}]
-        hole_card = ['S2','S4']
-        round_state = {'action_histories':
-        {'turn': [{'paid': 0, 'uuid': 'dsitwxjfzukumvtbxangpv', 'action': 'CALL', 'amount': 0},
-                  {'paid': 0, 'uuid': 'kydxboxhgkqcosfunbpkxs', 'action': 'CALL', 'amount': 0}],
-        'preflop': [{'add_amount': 50, 'uuid': 'dsitwxjfzukumvtbxangpv', 'action': 'SMALLBLIND', 'amount': 50},
-                    {'add_amount': 50, 'uuid': 'kydxboxhgkqcosfunbpkxs', 'action': 'BIGBLIND', 'amount': 100},
-                    {'action': 'FOLD', 'uuid': 'xkrwhpjormlqgduzvsivsb'},
-                    {'paid': 100, 'uuid': 'wywinfwqxcrtocydvsszbc', 'action': 'CALL', 'amount': 100},
-                    {'paid': 50, 'uuid': 'dsitwxjfzukumvtbxangpv', 'action': 'CALL', 'amount': 100},
-                    {'paid': 0, 'uuid': 'kydxboxhgkqcosfunbpkxs', 'action': 'CALL', 'amount': 100}],
-        'flop': [{'paid': 0, 'uuid': 'dsitwxjfzukumvtbxangpv', 'action': 'CALL', 'amount': 0},
-                 {'paid': 0, 'uuid': 'kydxboxhgkqcosfunbpkxs', 'action': 'CALL', 'amount': 0},
-                 {'paid': 0, 'uuid': 'wywinfwqxcrtocydvsszbc', 'action': 'CALL', 'amount': 0}]},
-        'community_card': ['HQ', 'S2', 'HQ', 'D5'], 'pot': {'main': {'amount': 300}, 'side': []},
-        'street': 'turn', 'dealer_btn': 0, 'next_player': 0, 'small_blind_amount': 50,
-        'seats': [{'state': 'participating', 'name': 'p1', 'uuid': 'wywinfwqxcrtocydvsszbc', 'stack': 9900},
-                  {'state': 'participating', 'name': 'p2', 'uuid': 'dsitwxjfzukumvtbxangpv', 'stack': 9900},
-                  {'state': 'participating', 'name': 'p3', 'uuid': 'kydxboxhgkqcosfunbpkxs', 'stack': 9900},
-                  {'state': 'folded', 'name': 'p4', 'uuid': 'xkrwhpjormlqgduzvsivsb', 'stack': 10000}],
-        'small_blind_pos': 1, 'big_blind_pos': 2, 'round_count': 1}
-
-        """
-
         self.hole_card = gen_cards(hole_card)
         if self.hole_card[0].rank<self.hole_card[1].rank:
             self.hole_card = [self.hole_card[1],self.hole_card[0]]
 
-        self.pos_group = self.define_position(round_state = round_state, player_id = round_state['next_player'])
+        self.pos_group = define_position(round_state = round_state, player_id = round_state['next_player'], num_players = self.num_players)
         self.big_blind_amount = round_state['small_blind_amount']*2
 
         self.street_was_raised = was_raised(round_state)
@@ -89,7 +53,7 @@ class PStratBot(BasePokerPlayer):
         if my_verbose_upper:
             print('Chosen strat: '+ str(strat))
         action, amount = self.define_action(strat, round_state, valid_actions)
-                
+
         if round_state['street'] == 'preflop':
             pass
             #print(self.pos_group)
@@ -108,8 +72,6 @@ class PStratBot(BasePokerPlayer):
         pass
 
     def receive_street_start_message(self, street, round_state):
-        #if(street=='preflop'):
-        #    self.pos_group = self.define_position(round_state)
         return
 
     def receive_game_update_message(self, action, round_state):
@@ -223,7 +185,7 @@ class PStratBot(BasePokerPlayer):
             elif(self.street_was_raised):
                 raiser_uuid = [action_desc['uuid'] for action_desc in round_state['action_histories'][round_state['street']] if action_desc['action']=='RAISE'][-1]
                 raiser_id = [player['uuid']==raiser_uuid for player in round_state['seats']].index(True)
-                raiser_pos_group = self.define_position(round_state = round_state, player_id = raiser_id)
+                raiser_pos_group = define_position(round_state = round_state, player_id = raiser_id, num_players=self.num_players)
                 raiser_BBs = round_state['seats'][raiser_id]['stack']/self.big_blind_amount
                 if raiser_pos_group == 'early':
                     #offsuit cards
@@ -338,19 +300,6 @@ class PStratBot(BasePokerPlayer):
             print(str(action)+'ing '+str(amount))
 
         return action, amount
-
-
-    def define_position(self, round_state, player_id):
-        rel_pos = (player_id-round_state['small_blind_pos'])%self.num_players
-        if (rel_pos<=1):
-            pos_group = 'blinds'
-        elif (rel_pos>=self.num_players-2):
-            pos_group = 'late'
-        elif (rel_pos>=self.num_players-5):
-            pos_group = 'middle'
-        else:
-            pos_group = 'early'
-        return pos_group
 
     def hand_in_range(self, hands_max, hands_min, suited = False, pocket=False):
         #regular hand

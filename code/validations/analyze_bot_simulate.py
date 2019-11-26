@@ -31,7 +31,7 @@ nb_players_6max = 6
 nb_cards = 52
 nb_hands = 250
 my_network = 'second'
-lstm_ref = LSTMBot(None,network=my_network)
+ref_full_dict = LSTMBot(network=my_network).full_dict
 
 print('## Starting ##')
 bot_id = 1
@@ -48,17 +48,17 @@ if my_network =='6max_single' or my_network=='6max_full':
         print('starting match '+str(i))
         nb_games = 1
         gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = nb_hands, overwrite=True)
-        lstm_ref = LSTMBot(None,network=my_network)
-        
-        with open(gen_dir+'/cst_decks.pkl', 'rb') as f:  
+        ref_full_dict = LSTMBot(network=my_network).full_dict
+
+        with open(gen_dir+'/cst_decks.pkl', 'rb') as f:
             cst_decks = pickle.load(f)
-        with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:  
+        with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
             lstm_bot_flat = pickle.load(f)
-            #lstm_bot_flat = mutate_bots(orig_bots_flat=[lstm_bot_flat], nb_new_bots=1, 
+            #lstm_bot_flat = mutate_bots(orig_bots_flat=[lstm_bot_flat], nb_new_bots=1,
             #                                      mut_rate=0.1, mut_strength=0.18)[0]
-            lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
+            lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, ref_full_dict = ref_full_dict)
             lstm_bot = LSTMBot(id_=bot_id, gen_dir = '.', full_dict = lstm_bot_dict, network=my_network, write_details=write_details)
-        
+
         #chosenBot=ManiacBot
 
         if my_network =='6max_single':
@@ -70,10 +70,10 @@ if my_network =='6max_single' or my_network=='6max_full':
               [ManiacBot, ManiacBot, ManiacBot, ConservativeBot, PStratBot],
               [PStratBot, PStratBot, PStratBot, CallBot, ConservativeBot]]
             opp_names = ['call_bot', 'conservative_bot', 'maniac_bot', 'pstrat_bot']
-        
+
         ini_hero_pos = i%nb_players_6max
         opp_id=1
-        
+
         config = setup_config(max_round=nb_hands, initial_stack=1500, small_blind_amount=10)
         for k in range(ini_hero_pos):
             config.register_player(name='p-'+str(opp_id), algorithm=opp_tables[table_ind][k]())
@@ -84,7 +84,7 @@ if my_network =='6max_single' or my_network=='6max_full':
             config.register_player(name='p-'+str(opp_id), algorithm=opp_tables[table_ind][k]())
             opp_id+=1
 
-        
+
         plays_per_blind=90
         blind_structure={0*plays_per_blind:{'ante':0, 'small_blind':10},\
                          1*plays_per_blind:{'ante':0, 'small_blind':15},\
@@ -98,7 +98,7 @@ if my_network =='6max_single' or my_network=='6max_full':
                          9*plays_per_blind:{'ante':75, 'small_blind':600},\
                 }
         config.set_blind_structure(blind_structure)
-        
+
         game_result, last_two_players, lstm_rank = start_poker(config, verbose=0, cheat = True,cst_deck_ids = cst_decks.copy(), return_last_two =True, return_lstm_rank = True)
         my_game_results=-1
         if lstm_bot.round_count==nb_hands:

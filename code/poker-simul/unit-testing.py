@@ -59,7 +59,7 @@ my_network='6max_full'
 
 ## Parse arguments and process ###
 parser = argparse.ArgumentParser(description='')
-parser.add_argument('--neural_network',  default='6max_full', type=str, help='Neural network architecture to use. [first, second, 6max_single, 6max_full]')
+parser.add_argument('--neural_network',  default='6max_full', type=str, help='Neural network architecture to use. [hu_first, hu_second, 6max_single, 6max_full]')
 args = parser.parse_args()
 my_network = args.neural_network
 
@@ -130,11 +130,11 @@ print("\n## Verifying get_flat_params(..) and get_full_dict(..) ##")
 #The test here is performed by verifying that get_flat_params(..)
 # and get_full_dict(..) are inverse functions of one another
 func_correct = True
-lstm_ref = LSTMBot(network=my_network)
+ref_full_dict = LSTMBot(network=my_network).full_dict
 ##verifying get_flat_params and get_full_dict
 lstm_cre = LSTMBot(network=my_network)
 lstm_cre_flat_params = get_flat_params(lstm_cre.full_dict)
-lstm_cre_full_dict = get_full_dict(lstm_cre_flat_params, lstm_ref)
+lstm_cre_full_dict = get_full_dict(lstm_cre_flat_params, ref_fulldict = ref_full_dict)
 #if(lstm_cre_full_dict == lstm_cre.full_dict):
 if not(lstm_cre_full_dict.keys()==lstm_cre.full_dict.keys()):
     print("[WARNING] Dictionnary keys are not consistent")
@@ -159,7 +159,7 @@ else:
 ####################
 print("\n## Verifying mutate_bots(..) ##")
 func_correct = True
-lstm_ref = LSTMBot(network=my_network)
+ref_full_dict = LSTMBot(network=my_network).full_dict
 lstm_first = LSTMBot(id_=1, network=my_network)
 first_flat = get_flat_params(lstm_first.full_dict)
 mut_rate = 0.15
@@ -193,11 +193,11 @@ else:
 ####################
 print("\n## Verifying crossover_bots(..) ##")
 func_correct = True
-lstm_ref = LSTMBot(network=my_network)
+ref_full_dict = LSTMBot(network=my_network).full_dict
 lstm_first = LSTMBot(id_=1, network=my_network)
 lstm_second = LSTMBot(id_=2, network=my_network)
-cross_flat = crossover_bots([get_flat_params(lstm_first.full_dict),get_flat_params(lstm_second.full_dict)], m_sizes_ref = lstm_ref, nb_new_bots = 1)[0]
-cross_dict = get_full_dict(all_params = cross_flat, m_sizes_ref = lstm_ref)
+cross_flat = crossover_bots([get_flat_params(lstm_first.full_dict),get_flat_params(lstm_second.full_dict)], ref_full_dict = ref_full_dict, nb_new_bots = 1)[0]
+cross_dict = get_full_dict(all_params = cross_flat, ref_full_dict = ref_full_dict)
 lstm_cross = LSTMBot(id_=4, full_dict = cross_dict, network=my_network)
 #verifying that key of layers are the same
 if(lstm_cross.full_dict.keys() != lstm_first.full_dict.keys() or lstm_cross.full_dict.keys() != lstm_second.full_dict.keys()):

@@ -7,7 +7,7 @@ Created on Tue May 28 13:09:35 2019
 """
 
 from pypokerengine.players import BasePokerPlayer
-from utils_bot import was_raised, get_tot_pot, raise_in_limits, comp_last_amount
+from u_bot import was_raised, get_tot_pot, raise_in_limits, comp_last_amount
 import random
 
 class ManiacBot(BasePokerPlayer):  # Do not forget to make parent class as "BasePokerPlayer"

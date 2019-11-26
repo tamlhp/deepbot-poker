@@ -58,7 +58,7 @@ if __name__ == '__main__':
     backed_gen_dir = '../../final_agents/simul_13/gen_150'
 
     print('## Starting ##')
-    lstm_ref = LSTMBot(None,network=my_network)
+    ref_full_dict = LSTMBot(network=my_network).full_dict
     #start redis and clear queue
     redis = Redis(REDIS_HOST)
     q = Queue(connection=redis, default_timeout=my_timeout)
@@ -71,7 +71,7 @@ if __name__ == '__main__':
         for run_id in range(0,100):
             with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
                 lstm_bot_flat = pickle.load(f)
-                lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
+                lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, ref_full_dict = ref_full_dict)
                 lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
 
             gen_decks(simul_id=simul_id,gen_id=run_id, log_dir=log_dir,nb_hands = nb_hands)
@@ -105,7 +105,7 @@ if __name__ == '__main__':
         for run_id in range(0,250):
             with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
                 lstm_bot_flat = pickle.load(f)
-                lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
+                lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, ref_full_dict = ref_full_dict)
                 lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
 
             gen_decks(simul_id=simul_id,gen_id=run_id, log_dir=log_dir,nb_hands = nb_hands, nb_games=nb_games)
@@ -138,7 +138,7 @@ if __name__ == '__main__':
         for run_id in range(0,250):
             with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
                 lstm_bot_flat = pickle.load(f)
-                lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
+                lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, ref_full_dict = ref_full_dict)
                 lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
 
             gen_decks(simul_id=simul_id,gen_id=run_id, log_dir=log_dir,nb_hands = nb_hands, nb_games=nb_games)

@@ -7,117 +7,96 @@ Created on Fri May 24 23:57:43 2019
 """
 import sys
 sys.path.append('../PyPokerEngine')
-from pypokerengine.players import BasePokerPlayer
-import torch
-from torch import nn
 import os
-from utils_bot import get_tot_pot, comp_hand_equity, decision_algo, comp_is_BB, comp_n_act_players, print_cards, print_state, was_raised, comp_last_amount,comp_last_amount_opp
-import re
-from collections import OrderedDict
-from torch.nn import functional as F
 import random
-from utils_io import write_declare_action_state, write_round_start_state, write_round_result_state, find_action_id, find_round_id
 import pickle
-from u_formatting import reduce_full_dict, extend_full_dict
+import torch
+import re
+from pypokerengine.players import BasePokerPlayer
+from u_bot import get_tot_pot, comp_hand_equity, decision_algo, comp_n_act_players, print_cards, print_state, was_raised, comp_last_amount,comp_last_amount_opp
+from collections import OrderedDict
+from utils_io import write_declare_action_state
+from u_formatting import extend_full_dict
 
-my_verbose_upper = False
-
-from networks import Net, Net_2, Net_6maxSingle, Net_6maxFull
+from networks import Net_HuFirst, Net_HuSecond, Net_6maxSingle, Net_6maxFull
 
 class LSTMBot(BasePokerPlayer):
-    def __init__(self, id_=1, gen_dir='./simul_data/simul_0/gen_0', full_dict = None, network='first', validation_mode=None, validation_id=None, write_details=False):
+    def __init__(self, id_=1, network='6max_full', full_dict = None, validation_mode=None, validation_dir='./simul_data/simul_0/gen_0', validation_id=None):
 
         self.network = network
+
+        #define i_opp and i_gen
         if full_dict == None:
+            #only occurs at first generation
             i_opp = self.init_i_opp()
             i_gen = self.init_i_gen()
-            if self.network =='first':
-                self.model = Net(i_opp,i_gen)
-            elif self.network =='second':
-                self.model=Net_2(i_opp,i_gen)
-            elif self.network == '6max_single':
-                self.model=Net_6maxSingle(i_gen)
-            elif self.network == '6max_full':
-                self.model=Net_6maxFull(i_opp,i_gen)
-            self.state_dict = next(self.model.modules()).state_dict()   #weights are automaticaly generated
-            full_dict_ = self.state_dict.copy()
-            full_dict_.update(i_opp), full_dict_.update(i_gen)
-            if self.network == '6max_full':
-                full_dict_= extend_full_dict(full_dict_)
-            self.full_dict = full_dict_
         else:
-            #print(full_dict['opp_game_h0_0_0'])
-            self.full_dict= full_dict
-            if self.network == '6max_full':
-                full_dict = extend_full_dict(full_dict)
-            self.state_dict, i_opp, i_gen = get_sep_dicts(full_dict, network=self.network)
-            if self.network =='first':
-                self.model = Net(i_opp,i_gen)
-            elif self.network =='second':
-                self.model=Net_2(i_opp,i_gen)
-            elif self.network == '6max_single':
-                self.model=Net_6maxSingle(i_gen)
-            elif self.network == '6max_full':
-                self.model=Net_6maxFull(i_opp,i_gen)
+            self.full_dict = extend_full_dict(full_dict=full_dict, network=self.network)
+            self.state_dict, i_opp, i_gen = get_sep_dicts(self.full_dict, network=self.network)
+
+        #create the neural network (model)
+        if self.network =='hu_first':
+            self.model = Net_HuFirst(i_opp,i_gen)
+        elif self.network =='hu_second':
+            self.model=Net_HuSecond(i_opp,i_gen)
+        elif self.network == '6max_single':
+            self.model=Net_6maxSingle(i_gen)
+        elif self.network == '6max_full':
+            self.model=Net_6maxFull(i_opp,i_gen)
+
+
+        if full_dict == None:
+            #define full_dict (state_dict + i_opp + i_gen), it is generated randomly
+            self.state_dict = next(self.model.modules()).state_dict()
+            self.full_dict = self.state_dict.copy()
+            self.full_dict.update(i_opp), self.full_dict.update(i_gen)
+            self.full_dict = extend_full_dict(full_dict=self.full_dict, network=self.network)
+        else:
+            #load state dict into network
             self.model.load_state_dict(self.state_dict)
+
         self.id = id_
-        self.gen_dir = gen_dir
-        #if not os.path.exists(self.gen_dir+'/bots/'+str(self.id)):
-        #    os.makedirs(self.gen_dir+'/bots/'+str(self.id)
-        self.num_players = 6
-        self.validation_mode = validation_mode
-        self.validation_id = validation_id
+        self.action_id=0
         self.round_count=0
-        self.action_id=1
-        self.write_details = write_details
+
+        self.validation_mode = validation_mode
+        if self.validation_mode!=None:
+            self.validation_dir = validation_dir
+            self.validation_id = validation_id
 
 
-    #  we define the logic to make an action through this method. (so this method would be the core of your AI)
+    #  Define the logic to make an action
     def declare_action(self, valid_actions, hole_card, round_state):
-        #self.stack=round_state['seats'][round_state['next_player']]['stack']
-        #print(self.stack)
-        # valid_actions format => [raise_action_info, call_action_info, fold_action_info]
-        if self.network == '6max_full':
-            for key in round_state['action_histories'].keys():
-                round_state['action_histories'][key] = [action for action in round_state['action_histories'][key] if action['action']!='ANTE']
         self.new_round_handle(round_state)
         input_tensor = self.prep_input(hole_card, round_state, valid_actions, network=self.network)
-        #print('input tensor: '+str(input_tensor))
         net_output = self.net_predict(input_tensor)
-        #print('net output: ' +str(net_output))
-        version='default'
-        if self.network=='6max_full':
-            version='newer'
         action, amount = decision_algo(net_output=net_output, round_state=round_state, valid_actions = valid_actions,
-                                       i_stack = self.i_stack, my_uuid = self.uuid, verbose = my_verbose_upper, version=version)
+                                       i_stack = self.i_stack, my_uuid = self.uuid, verbose = False, version=self.network)
 
-        if self.write_details:
-            write_declare_action_state(round_id = self.round_count, action_id = self.action_id, net_input=input_tensor, net_output=net_output, action=action, amount = amount,
-                               csv_file = self.gen_dir+'/analysis_data/'+str(self.id)+'/declare_action_state.csv')
+        #validation specific action
+        if self.validation_mode == "decision_analysis":
             self.action_id+=1
+            write_declare_action_state(round_id = self.round_count, action_id = self.action_id, net_input=input_tensor, net_output=net_output, action=action, amount = amount,
+                               csv_file = self.validation_dir+'/analysis_data/'+str(self.id)+'/declare_action_state.csv')
         if self.validation_mode == "mutation_variance":
-            with open(self.gen_dir+'/outputs_'+str(self.validation_id)+'.pkl', 'ab') as f:
+            with open(self.validation_dir+'/outputs_'+str(self.validation_id)+'.pkl', 'ab') as f:
                 pickle.dump(net_output, f, protocol=0)
             action, amount = 'fold',0
         if self.validation_mode=="crossover_variance":
-            with open(self.gen_dir+'/outputs_'+str(self.validation_id)+'.pkl', 'ab') as f:
+            with open(self.validation_dir+'/outputs_'+str(self.validation_id)+'.pkl', 'ab') as f:
                 pickle.dump(net_output, f, protocol=0)
             action, amount = 'fold',0
-        #if self.validation_mode=='game':
-        #    with open(self.gen_dir+'/outputs_'+str(self.validation_id)+'.pkl', 'ab') as f:
-        #        pickle.dump(net_output, f, protocol=0)
 
-
+        #prints information relative to bot's decisions periodically, good for monitoring training
         if  random.random() < 0: #len(round_state['community_card'])!=0:#random.random() < 0: #net_output>0:##
             print('\n LSTM')
-            #print('net input: ' +str(input_tensor))
             print('at round: ' +str(self.round_count))
             print('Stack: ' +str(round_state['seats'][round_state['next_player']]['stack']))
             print('at blind: '+str(round_state['small_blind_amount']))
             print_cards(hole_card = hole_card, round_state=round_state)
             print_state(net_output=net_output, action=action, amount=amount)
 
-        return action, amount   # action returned here is sent to the poker engine
+        return action, amount
 
     def receive_game_start_message(self, game_info):
         self.i_stack = game_info['rule']['initial_stack']
@@ -132,60 +111,11 @@ class LSTMBot(BasePokerPlayer):
         pass
 
     def receive_round_result_message(self, winners, hand_info, round_state):
-        if self.write_details and False:
-            write_round_result_state(round_id = self.round_id, winners = winners,
-                             hand_info = hand_info, round_state = round_state, csv_file = self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_round_result_state.csv')
-            self.round_id+=1
         pass
 
+    def prep_input(self, hole_card, round_state, valid_actions, network = 'hu_first'):
 
-    def init_i_opp(self):
-        i_opp = OrderedDict()
-        if self.network=='first':
-            i_opp_keys = ['opp_h0','opp_c0']
-            for key in i_opp_keys:
-                i_opp[key]=torch.randn(50).view(1,1,50)
-        elif self.network=='second':
-            i_opp_keys = ['opp_h0_'+str(i) for i in range(10)]+['opp_c0_'+str(i) for i in range(10)]
-            for key in i_opp_keys:
-                i_opp[key]=torch.randn(10).view(1,1,10)
-        elif self.network=='6max_single':
-            pass
-        elif self.network=='6max_full':
-            i_opp_keys=[]
-            for opp_id in range(5):
-                i_opp_keys.extend(['opp_round_h0_'+str(opp_id)+'_'+str(i) for i in range(10)]+['opp_round_c0_'+str(opp_id)+'_'+str(i) for i in range(10)])
-            for key in i_opp_keys:
-                if key.split('_')[3]=='0':
-                    i_opp[key]=torch.randn(5).view(1,1,5)
-                else:
-                    i_opp[key]=i_opp['_'.join(key.split('_')[:3]+['0']+key.split('_')[4:])].clone()
-        return i_opp
-
-    def init_i_gen(self):
-        i_gen_keys = ['gen_h0_'+str(i) for i in range(10)]+['gen_c0_'+str(i) for i in range(10)]
-        i_gen = OrderedDict()
-        for key in i_gen_keys:
-            i_gen[key]=torch.randn(10).view(1,1,10)
-        if self.network=='6max_full':
-            i_gen_keys_opp=[]
-            for opp_id in range(5):
-                i_gen_keys_opp.extend(['opp_game_h0_'+str(opp_id)+'_'+str(i) for i in range(10)]+['opp_game_c0_'+str(opp_id)+'_'+str(i) for i in range(10)])
-            for key in i_gen_keys_opp:
-                if key.split('_')[3]=='0':
-                    i_gen[key]=torch.randn(5).view(1,1,5)
-                else:
-                    i_gen[key]=i_gen['_'.join(key.split('_')[:3]+['0']+key.split('_')[4:])].clone()
-        return i_gen
-
-    def new_round_handle(self, round_state):
-        if round_state['street'] =='preflop' and len([action['action'] for action in round_state['action_histories']['preflop'] if action['uuid']==self.uuid and not(action['action'] in ['BIGBLIND', 'SMALLBLIND'])]) == 0:
-            self.model.reset_u_gen()
-        return
-
-    def prep_input(self, hole_card, round_state, valid_actions, network = 'first'):
-
-        if network =='first' or  network=='second':
+        if network =='hu_first' or  network=='hu_second':
             n_act_players = comp_n_act_players(round_state)
 
             input_size = 8
@@ -218,13 +148,12 @@ class LSTMBot(BasePokerPlayer):
             call_amount = [action['amount'] for action in valid_actions if action['action']=='call'][0]
             my_last_amount= comp_last_amount(round_state=round_state, my_uuid=self.uuid)
             call_price = call_amount-my_last_amount
-            #inputs[7] = call_price/(call_price+tot_pot) #VERIFY WHICH WAS USED
             inputs[7] = call_amount/(call_amount+tot_pot)
 
         elif network.split('_')[0] == '6max':
             n_act_players = comp_n_act_players(round_state)
-
             input_size = 12
+            nb_players_6max = 6
 
             inputs = [0,]*input_size
             #setting street one-hot encoding
@@ -233,17 +162,17 @@ class LSTMBot(BasePokerPlayer):
             inputs[street_ind] = 1
 
             #nb opponent players
-            inputs[4] = (n_act_players-1)/self.num_players
+            inputs[4] = (n_act_players-1)/nb_players_6max
 
             #setting position at table
             BB_pos = round_state['small_blind_pos']-1
-            players_after_hero = (BB_pos-round_state['next_player'])%self.num_players
-            players_between_pos = [(BB_pos - diff)%self.num_players for diff in range(0,players_after_hero)]
+            players_after_hero = (BB_pos-round_state['next_player'])%nb_players_6max
+            players_between_pos = [(BB_pos - diff)%nb_players_6max for diff in range(0,players_after_hero)]
             #print('players between: '+str(len(players_between_pos)))
             nb_folded_between = len([player_pos for player_pos in players_between_pos if round_state['seats'][player_pos]['state'] != 'participating'])
             #print('nb_folded: '+str(nb_folded_between))
-            players_participating_after_hero = (round_state['small_blind_pos']-1-nb_folded_between-round_state['next_player'])%self.num_players
-            inputs[5] = players_participating_after_hero/self.num_players
+            players_participating_after_hero = (round_state['small_blind_pos']-1-nb_folded_between-round_state['next_player'])%nb_players_6max
+            inputs[5] = players_participating_after_hero/nb_players_6max
 
             #setting hand equity
             if len(network.split('_'))>1:
@@ -264,8 +193,6 @@ class LSTMBot(BasePokerPlayer):
 
             else: #if on turn or river
                 inputs[7]=0
-            ## wether the street is raised
-            #inputs[9] = 1*was_raised(round_state)
 
             ## my current stack
             inputs[8] = round_state['seats'][round_state['next_player']]['stack']/self.i_stack
@@ -325,28 +252,58 @@ class LSTMBot(BasePokerPlayer):
 
         return torch.Tensor(inputs).view(1, 1, -1)
 
-
-    def clear_log(self):
-        if False:
-            for logtype in ['declare_action_state','round_start_state','round_result_state']:
-                if self.gen_dir != None and os.path.exists(self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_'+logtype+'.csv'):
-                    os.remove(self.gen_dir+'/bots/'+str(self.id)+'/'+str(self.opponent)+'_'+logtype+'.csv')
-
     def net_predict(self, input_tensor):
         net_output = self.model(input_tensor)
         return net_output.squeeze().item()
 
-    def define_position(self, round_state, player_id):
-        rel_pos = (player_id-round_state['small_blind_pos'])%self.num_players
-        if (rel_pos<=1):
-            pos_group = 'blinds'
-        elif (rel_pos>=self.num_players-2):
-            pos_group = 'late'
-        elif (rel_pos>=self.num_players-5):
-            pos_group = 'middle'
-        else:
-            pos_group = 'early'
-        return pos_group
+    def new_round_handle(self, round_state):
+        # reset round relative memory if new round
+        if round_state['street'] =='preflop' and len([action['action'] for action in round_state['action_histories']['preflop'] if action['uuid']==self.uuid and not(action['action'] in ['BIGBLIND', 'SMALLBLIND'])]) == 0:
+            self.model.reset_u_gen()
+        # remove antes for 6max_full
+        if self.network == '6max_full':
+            for key in round_state['action_histories'].keys():
+                round_state['action_histories'][key] = [action for action in round_state['action_histories'][key] if action['action']!='ANTE']
+        return
+
+    def init_i_opp(self):
+        i_opp = OrderedDict()
+        if self.network=='hu_first':
+            i_opp_keys = ['opp_h0','opp_c0']
+            for key in i_opp_keys:
+                i_opp[key]=torch.randn(50).view(1,1,50)
+        elif self.network=='hu_second':
+            i_opp_keys = ['opp_h0_'+str(i) for i in range(10)]+['opp_c0_'+str(i) for i in range(10)]
+            for key in i_opp_keys:
+                i_opp[key]=torch.randn(10).view(1,1,10)
+        elif self.network=='6max_single':
+            pass
+        elif self.network=='6max_full':
+            i_opp_keys=[]
+            for opp_id in range(5):
+                i_opp_keys.extend(['opp_round_h0_'+str(opp_id)+'_'+str(i) for i in range(10)]+['opp_round_c0_'+str(opp_id)+'_'+str(i) for i in range(10)])
+            for key in i_opp_keys:
+                if key.split('_')[3]=='0':
+                    i_opp[key]=torch.randn(5).view(1,1,5)
+                else:
+                    i_opp[key]=i_opp['_'.join(key.split('_')[:3]+['0']+key.split('_')[4:])].clone()
+        return i_opp
+
+    def init_i_gen(self):
+        i_gen_keys = ['gen_h0_'+str(i) for i in range(10)]+['gen_c0_'+str(i) for i in range(10)]
+        i_gen = OrderedDict()
+        for key in i_gen_keys:
+            i_gen[key]=torch.randn(10).view(1,1,10)
+        if self.network=='6max_full':
+            i_gen_keys_opp=[]
+            for opp_id in range(5):
+                i_gen_keys_opp.extend(['opp_game_h0_'+str(opp_id)+'_'+str(i) for i in range(10)]+['opp_game_c0_'+str(opp_id)+'_'+str(i) for i in range(10)])
+            for key in i_gen_keys_opp:
+                if key.split('_')[3]=='0':
+                    i_gen[key]=torch.randn(5).view(1,1,5)
+                else:
+                    i_gen[key]=i_gen['_'.join(key.split('_')[:3]+['0']+key.split('_')[4:])].clone()
+        return i_gen
 
 
 def get_sep_dicts(full_dict, network=None):

@@ -46,7 +46,7 @@ bot_id = 1
 
 log_dir = './simul_data'
 gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = 500, overwrite=True)
-lstm_ref = LSTMBot(None,network=my_network)
+ref_full_dict = LSTMBot(None,network=my_network).full_dict
 
 with open(gen_dir+'/cst_decks.pkl', 'rb') as f:
     cst_decks = pickle.load(f)
@@ -54,7 +54,7 @@ with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', '
     lstm_bot_flat = pickle.load(f)
     #lstm_bot_flat = mutate_bots(orig_bots_flat=[lstm_bot_flat], nb_new_bots=1,
     #                                      mut_rate=0.1, mut_strength=0.18)[0]
-    lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
+    lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, ref_full_dict = ref_full_dict)
     lstm_bot = LSTMBot(id_=bot_id, gen_dir = '.', full_dict = lstm_bot_dict, network=my_network)
     lstm_bot_2 = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
     lstm_bot_3 = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
@@ -123,7 +123,7 @@ nb_generations = 250
 
 
 my_network = 'second'
-lstm_ref = LSTMBot(None,network=my_network)
+ref_full_dict = LSTMBot(network=my_network).full_dict
 
 
 bot_id = 1
@@ -132,7 +132,7 @@ gen_dir='./simul_data/simul_0/gen_0'
 backed_gen_dir = '../../../backed_simuls/simul_8/gen_250'
 with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
     lstm_bot_flat = pickle.load(f)
-    lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
+    lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, ref_full_dict = ref_full_dict)
     lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
 
 gen_decks(simul_id=simul_id,gen_id=0, log_dir=log_dir,nb_hands = nb_hands)
@@ -159,7 +159,7 @@ print(earnings)
 #backed_gen_dir= './simul_data/simul_5/gen_1'
 with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
     lstm_bot_flat = pickle.load(f)
-    lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
+    lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, ref_full_dict = ref_full_dict)
     lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
 
 #load decks

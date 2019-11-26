@@ -26,12 +26,12 @@ train_gen_id = 250        #The generation of the agent picked (the latest here)
 bot_id = 1                #The first agent, thus the best of the last generation
 backed_gen_dir = '../../../backed_simuls/simul_'+str(simul_id)+'/gen_'+str(train_gen_id)
 #Used for reference of the size of the layers
-lstm_ref = LSTMBot(None,network=my_network)
+ref_full_dict = LSTMBot(network=my_network).full_dict
 with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
     #The trainable parameters in a single list
     lstm_bot_flat = pickle.load(f)
     #The trainable parameters in a dictionary separating by layer
-    lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, m_sizes_ref = lstm_ref)
+    lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, ref_full_dict = ref_full_dict)
     #The actual bot, compatible with PyPokerEngine
     lstm_bot = LSTMBot(id_ = bot_id, gen_dir = '.', full_dict = lstm_bot_dict, network=my_network)
 ```

@@ -5,32 +5,19 @@ Created on Wed May 15 13:15:22 2019
 
 @author: cyril
 """
-import mkl
-mkl.set_num_threads(1)
 import sys
 sys.path.append('../PyPokerEngine/')
 sys.path.append('../poker-simul/')
-from pypokerengine.api.game import setup_config, start_poker
-from bot_CallBot import CallBot
-from bot_ConservativeBot import ConservativeBot
-from bot_ManiacBot import ManiacBot
-from bot_PStratBot import PStratBot
-from bot_LSTMBot import LSTMBot
-from bot_CandidBot import CandidBot
-from bot_EquityBot import EquityBot
-import random
-import pickle
-import numpy as np
-import time
-from multiprocessing import Pool
 import os
+import random
 from functools import reduce
-from collections import OrderedDict
+import pickle
+from bot_LSTMBot import LSTMBot
 from u_formatting import get_flat_params
 
 ### GENERATE RANDOM BOTS ###
 #Necessary for first generation
-def gen_rand_bots(gen_dir, network='first', ga_popsize=50, overwrite=True):
+def gen_rand_bots(gen_dir, network='6max_full', ga_popsize=50, overwrite=True):
     #create dir for generation
     if not os.path.exists(gen_dir):
         os.makedirs(gen_dir)
