@@ -19,7 +19,7 @@ from redis import Redis
 from rq import Queue
 from neuroevolution import compute_ANE
 from bot_LSTMBot import LSTMBot
-from utils_io import prep_gen_dirs, get_all_gen_flat
+from u_io import prep_gen_dirs, get_all_gen_flat
 import random
 import numpy as np
 from operator import add
