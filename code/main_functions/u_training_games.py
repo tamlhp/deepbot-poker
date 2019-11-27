@@ -23,25 +23,25 @@ from bot_CallBot import CallBot
 from bot_ConservativeBot import ConservativeBot
 from bot_ManiacBot import ManiacBot
 from bot_PStratBot import PStratBot
-from bot_LSTMBot import LSTMBot
+from bot_DeepBot import DeepBot
 from bot_CandidBot import CandidBot
 from bot_EquityBot import EquityBot
 
 def run_generation_games(gen_dir, ga_popsize, my_network, my_timeout, train_env, cst_decks, ini_stack, sb_amount, nb_hands, q):
     mkl.set_num_threads(64)
     # Neural network layer size reference
-    ref_full_dict = LSTMBot(network=my_network).full_dict
+    ref_full_dict = DeepBot(network=my_network).full_dict
     #Empty jobs list
     jobs = []
     for bot_id in range(1,ga_popsize+1):
         #Load the bot
         with open(gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
-            lstm_bot_flat = pickle.load(f)
-            lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, ref_full_dict = ref_full_dict)
-            lstm_bot = LSTMBot(id_=bot_id, network=my_network, full_dict = lstm_bot_dict)
+            deepbot_flat = pickle.load(f)
+            deepbot_dict = get_full_dict(all_params = deepbot_flat, ref_full_dict = ref_full_dict)
+            deepbot = DeepBot(id_=bot_id, network=my_network, full_dict = deepbot_dict)
         #Enqueue job to play bot's games
         try:
-            jobs.append(q.enqueue(run_games, timeout=my_timeout, kwargs = dict(train_env=train_env, lstm_bot=lstm_bot, cst_decks = cst_decks, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands)))
+            jobs.append(q.enqueue(run_games, timeout=my_timeout, kwargs = dict(train_env=train_env, deepbot=deepbot, cst_decks = cst_decks, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands)))
         except ConnectionError:
             print('Currently not connected to redis server')
             continue
@@ -65,7 +65,7 @@ def run_generation_games(gen_dir, ga_popsize, my_network, my_timeout, train_env,
                 if jobs[i].result is None:
                     try:
                         jobs[i].cancel()
-                        jobs.append(q.enqueue(run_games, timeout=my_timeout, kwargs = dict(train_env=train_env, lstm_bot=lstm_bot, cst_decks = cst_decks, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands)))
+                        jobs.append(q.enqueue(run_games, timeout=my_timeout, kwargs = dict(train_env=train_env, deepbot=deepbot, cst_decks = cst_decks, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands)))
                     except ConnectionError:
                         print('Currently not connected to redis server')
                         continue
@@ -75,21 +75,21 @@ def run_generation_games(gen_dir, ga_popsize, my_network, my_timeout, train_env,
     return all_earnings
 
 
-def run_games(train_env, lstm_bot, cst_decks, ini_stack=1500, sb_amount=10, nb_hands=300):
+def run_games(train_env, deepbot, cst_decks, ini_stack=1500, sb_amount=10, nb_hands=300):
     mkl.set_num_threads(1)
     if train_env == 'hu_cash_mixed':
-        run_one_game_rebuys(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)
+        run_one_game_rebuys(deepbot=deepbot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)
     elif train_env=='6max_sng_single':
-        run_one_game_6max_single(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)
+        run_one_game_6max_single(deepbot=deepbot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)
     elif train_env=='6max_sng_mixed':
-        run_one_game_6max_full(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)
+        run_one_game_6max_full(deepbot=deepbot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)
     elif train_env=='fake':
         earnings = run_one_game_fake()
     else:
         print('[run_games] ERROR: train_env not recognized')
     return earnings
 
-def run_one_game_reg(simul_id , gen_id, lstm_bot, verbose=False, cst_decks=None, nb_sub_matches =10):
+def run_one_game_reg(simul_id , gen_id, deepbot, verbose=False, cst_decks=None, nb_sub_matches =10):
     """old"""
     #CONFIGURATION
     nb_hands = 500
@@ -105,11 +105,11 @@ def run_one_game_reg(simul_id , gen_id, lstm_bot, verbose=False, cst_decks=None,
         #first match
         my_game_result_1 = 0
         cst_deck_match=cst_decks.copy()
-        lstm_bot.model.reset()
+        deepbot.model.reset()
         for i in range(nb_sub_matches):
             config = setup_config(max_round=int(nb_hands/nb_sub_matches)-1, initial_stack=ini_stack, small_blind_amount=sb_amount)
-            config.register_player(name=lstm_bot.opponent, algorithm=opp_algo)
-            config.register_player(name="lstm_bot", algorithm= lstm_bot)
+            config.register_player(name=deepbot.opponent, algorithm=opp_algo)
+            config.register_player(name="deepbot", algorithm= deepbot)
             game_result_1 = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two=False)
             #Hacky fix for missing last SB in some results
             if game_result_1['players'][1]['stack'] == 2*ini_stack-sb_amount:
@@ -121,11 +121,11 @@ def run_one_game_reg(simul_id , gen_id, lstm_bot, verbose=False, cst_decks=None,
         #return match
         my_game_result_2 = 0
         cst_deck_match=cst_decks.copy()
-        lstm_bot.model.reset()
+        deepbot.model.reset()
         for i in range(nb_sub_matches):
             config = setup_config(max_round=int(nb_hands/nb_sub_matches)-1, initial_stack=ini_stack, small_blind_amount=sb_amount)
-            config.register_player(name="lstm_bot", algorithm=lstm_bot)
-            config.register_player(name=lstm_bot.opponent, algorithm=opp_algo)
+            config.register_player(name="deepbot", algorithm=deepbot)
+            config.register_player(name=deepbot.opponent, algorithm=opp_algo)
             game_result_2 = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two=False)
             ##Fixing issue with missing last SB in certain wins
             if game_result_2['players'][0]['stack'] == 2*ini_stack-sb_amount:
@@ -141,7 +141,7 @@ def run_one_game_reg(simul_id , gen_id, lstm_bot, verbose=False, cst_decks=None,
 
 
 
-def run_one_game_rebuys(lstm_bot, nb_hands = 500, ini_stack = 3000, sb_amount = 50, opponents = 'default', verbose=False, cst_decks=None):
+def run_one_game_rebuys(deepbot, nb_hands = 500, ini_stack = 3000, sb_amount = 50, opponents = 'default', verbose=False, cst_decks=None):
     if opponents == 'default':
         opp_algos = [CallBot(), ConservativeBot(), EquityBot(), ManiacBot()]
         opp_names = ['call_bot','conservative_bot', 'equity_bot','maniac_bot']
@@ -157,17 +157,17 @@ def run_one_game_rebuys(lstm_bot, nb_hands = 500, ini_stack = 3000, sb_amount = 
         max_round = nb_hands
         my_game_result_1 = 0
         cst_deck_match=cst_decks.copy()
-        lstm_bot.model.reset()
+        deepbot.model.reset()
         while True:
             config = setup_config(max_round=max_round, initial_stack=ini_stack, small_blind_amount=sb_amount)
-            config.register_player(name=lstm_bot.opponent, algorithm=opp_algo)
-            config.register_player(name="lstm_bot", algorithm= lstm_bot)
+            config.register_player(name=deepbot.opponent, algorithm=opp_algo)
+            config.register_player(name="deepbot", algorithm= deepbot)
             game_result_1 = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two=False)
             #Hacky fix for missing last SB in some results
             if game_result_1['players'][1]['stack'] == 2*ini_stack-sb_amount:
                 game_result_1['players'][1]['stack'] = 2*ini_stack
             my_game_result_1 += game_result_1['players'][1]['stack'] - ini_stack
-            max_round-=(lstm_bot.round_count+1)
+            max_round-=(deepbot.round_count+1)
             if max_round<=0:
                 break
 
@@ -178,17 +178,17 @@ def run_one_game_rebuys(lstm_bot, nb_hands = 500, ini_stack = 3000, sb_amount = 
         max_round = nb_hands
         my_game_result_2 = 0
         cst_deck_match=cst_decks.copy()
-        lstm_bot.model.reset()
+        deepbot.model.reset()
         while True:
             config = setup_config(max_round=max_round, initial_stack=ini_stack, small_blind_amount=sb_amount)
-            config.register_player(name="lstm_bot", algorithm=lstm_bot)
-            config.register_player(name=lstm_bot.opponent, algorithm=opp_algo)
+            config.register_player(name="deepbot", algorithm=deepbot)
+            config.register_player(name=deepbot.opponent, algorithm=opp_algo)
             game_result_2 = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two=False)
             #Hacky fix for missing last SB in some results
             if game_result_2['players'][0]['stack'] == 2*ini_stack-sb_amount:
                 game_result_2['players'][0]['stack'] = 2*ini_stack
             my_game_result_2 += game_result_2['players'][0]['stack'] - ini_stack
-            max_round-=(lstm_bot.round_count+1)
+            max_round-=(deepbot.round_count+1)
             if max_round<=0:
                 break
 
@@ -198,13 +198,13 @@ def run_one_game_rebuys(lstm_bot, nb_hands = 500, ini_stack = 3000, sb_amount = 
         earnings[opp_name] = my_game_result_1 + my_game_result_2
 
 
-   # print('Done with game of bot number: '+ str(lstm_bot.id))
+   # print('Done with game of bot number: '+ str(deepbot.id))
 
     return earnings
 
 
 
-def run_one_game_6max_single(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount = 10, opponents = 'default', verbose=False, cst_decks=None, is_validation = False):
+def run_one_game_6max_single(deepbot, nb_hands = 250, ini_stack = 1500, sb_amount = 10, opponents = 'default', verbose=False, cst_decks=None, is_validation = False):
     nb_players_6max = 6
     ## Number of full games (6 reg games) played vs each opponent:
     nb_full_games_per_opp = 4
@@ -230,17 +230,17 @@ def run_one_game_6max_single(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amou
         opp_names = opponents['opp_names']
 
     earnings = OrderedDict()
-    lstm_ranks = OrderedDict()
+    deepbot_ranks = OrderedDict()
     ## for each bot to oppose
     for opp_algo, opp_name in zip(opp_algos, opp_names):
 
         max_round = nb_hands
-        lstm_bot.model.reset()
+        deepbot.model.reset()
         my_game_results = []
-        my_lstm_ranks = []
+        my_deepbot_ranks = []
         for full_game_id in range(nb_full_games_per_opp):
             my_game_results.append([-1,]*nb_players_6max)
-            my_lstm_ranks.append([-1,]*nb_players_6max)
+            my_deepbot_ranks.append([-1,]*nb_players_6max)
             #for each position the hero can find himself
             for ini_hero_pos in range(nb_players_6max):
                 #deck of the match
@@ -248,40 +248,40 @@ def run_one_game_6max_single(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amou
                 opp_id=0
                 config = setup_config(max_round=max_round, initial_stack=ini_stack, small_blind_amount=sb_amount)
                 for i in range(ini_hero_pos):
-                    config.register_player(name=lstm_bot.opponent+str(opp_id), algorithm=opp_algo())
+                    config.register_player(name=deepbot.opponent+str(opp_id), algorithm=opp_algo())
                     opp_id+=1
-                config.register_player(name="lstm_bot", algorithm= lstm_bot)
+                config.register_player(name="deepbot", algorithm= deepbot)
                 for i in range(nb_players_6max-ini_hero_pos-1):
-                    config.register_player(name=lstm_bot.opponent+str(opp_id), algorithm=opp_algo())
+                    config.register_player(name=deepbot.opponent+str(opp_id), algorithm=opp_algo())
                 config.set_blind_structure(blind_structure.copy())
                 if is_validation:
-                    game_result, last_two_players, lstm_rank = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True, return_lstm_rank=True)
+                    game_result, last_two_players, deepbot_rank = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True, return_deepbot_rank=True)
                 else:
                     game_result, last_two_players = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True)
 
                 if is_validation:
-                    my_lstm_ranks[full_game_id][ini_hero_pos] = lstm_rank+1
-                if lstm_bot.round_count==max_round:
+                    my_deepbot_ranks[full_game_id][ini_hero_pos] = deepbot_rank+1
+                if deepbot.round_count==max_round:
                     print('Game could not finish in max number of hands')
                     my_game_results[full_game_id][ini_hero_pos] = 0
                 else:
-                    if "lstm_bot" in last_two_players:
+                    if "deepbot" in last_two_players:
                         my_game_results[full_game_id][ini_hero_pos]=1
                     if game_result['players'][ini_hero_pos]['stack']>0:
                         my_game_results[full_game_id][ini_hero_pos]=3
             print(my_game_results)
 
         if is_validation:
-            lstm_ranks[opp_name] = my_lstm_ranks
+            deepbot_ranks[opp_name] = my_deepbot_ranks
             earnings[opp_name] = my_game_results
         else:
             earnings[opp_name] =np.average(my_game_results)
     if not(is_validation):
         return earnings
     else:
-        return earnings, lstm_ranks
+        return earnings, deepbot_ranks
 
-def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount = 10, opponents = 'default', verbose=False, cst_decks=None, is_validation=False):
+def run_one_game_6max_full(deepbot, nb_hands = 250, ini_stack = 1500, sb_amount = 10, opponents = 'default', verbose=False, cst_decks=None, is_validation=False):
     nb_players_6max = 6
     # Number of full games (6 reg games) played vs each opponent:
     nb_full_games_per_opp = 4
@@ -310,19 +310,19 @@ def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount
         opp_names = opponents['opp_names']
 
     earnings = OrderedDict()
-    lstm_ranks = OrderedDict()
+    deepbot_ranks = OrderedDict()
     ## for each bot to oppose
     for table_ind in range(4):
         my_game_results = []
-        my_lstm_ranks = []
+        my_deepbot_ranks = []
         for full_game_id in range(nb_full_games_per_opp):
             my_game_results.append([-1,]*nb_players_6max)
-            my_lstm_ranks.append([-1,]*nb_players_6max)
+            my_deepbot_ranks.append([-1,]*nb_players_6max)
             ## for each position the hero can find himself
             time_1=time.time()
             for ini_hero_pos in range(nb_players_6max):
                 max_round = nb_hands
-                lstm_bot.model.reset()
+                deepbot.model.reset()
                 #deck of the match
                 #cst_deck_match=cst_decks[int(full_game_id*nb_players_6max+ini_hero_pos)].copy()
                 cst_deck_match=cst_decks[int(table_ind*len(opp_names)+full_game_id)].copy()
@@ -331,24 +331,24 @@ def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount
                 for i in range(ini_hero_pos):
                     config.register_player(name='p-'+str(opp_id), algorithm=opp_tables[table_ind][i]())
                     opp_id+=1
-                config.register_player(name="lstm_bot", algorithm= lstm_bot)
+                config.register_player(name="deepbot", algorithm= deepbot)
                 opp_id+=1
                 for i in range(ini_hero_pos,nb_players_6max-1):
                     config.register_player(name='p-'+str(opp_id), algorithm=opp_tables[table_ind][i]())
                     opp_id+=1
                 config.set_blind_structure(blind_structure.copy())
                 if is_validation:
-                    game_result, last_two_players, lstm_rank = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True, return_lstm_rank=True)
+                    game_result, last_two_players, deepbot_rank = start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True, return_deepbot_rank=True)
                 else:
                     game_result, last_two_players= start_poker(config, verbose=0, cheat = True, cst_deck_ids = cst_deck_match, return_last_two =True)
 
                 if is_validation:
-                    my_lstm_ranks[full_game_id][ini_hero_pos] = lstm_rank+1
-                if lstm_bot.round_count==max_round:
+                    my_deepbot_ranks[full_game_id][ini_hero_pos] = deepbot_rank+1
+                if deepbot.round_count==max_round:
                     print('Game could not finish in max number of hands')
                     my_game_results[full_game_id][ini_hero_pos] = 0
                 else:
-                    if "lstm_bot" in last_two_players:
+                    if "deepbot" in last_two_players:
                         my_game_results[full_game_id][ini_hero_pos]=1
                     if game_result['players'][ini_hero_pos]['stack']>0:
                         my_game_results[full_game_id][ini_hero_pos]=3
@@ -359,14 +359,14 @@ def run_one_game_6max_full(lstm_bot, nb_hands = 250, ini_stack = 1500, sb_amount
         #earnings[opp_names[table_ind]] =np.average(my_game_results)
 
         if is_validation:
-            lstm_ranks[opp_names[table_ind]] = my_lstm_ranks
+            deepbot_ranks[opp_names[table_ind]] = my_deepbot_ranks
             earnings[opp_names[table_ind]] = my_game_results
         else:
             earnings[opp_names[table_ind]] =np.average(my_game_results)
     if not(is_validation):
         return earnings
     else:
-        return earnings, lstm_ranks
+        return earnings, deepbot_ranks
 
 def run_one_game_fake():
     earnings = OrderedDict()

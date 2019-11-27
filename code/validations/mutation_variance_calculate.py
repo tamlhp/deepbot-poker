@@ -24,7 +24,7 @@ my_network='second'
 my_dpi=100
 nb_measures=10
 
-outputs_lstm = []
+outputs_deepbot = []
 outputs_mutant = [[],[],[],[],[],[],[],[],[],[]]
 mut_ids=np.arange(1,nb_measures)
 for gen_id in range(50):
@@ -32,7 +32,7 @@ for gen_id in range(50):
     with open(gen_dir+'/outputs_0.pkl', 'rb') as fr:
         try:
             while True:
-                outputs_lstm.append(pickle.load(fr))
+                outputs_deepbot.append(pickle.load(fr))
         except EOFError:
             pass
     for i,mut_id in enumerate(mut_ids):
@@ -42,13 +42,13 @@ for gen_id in range(50):
                     outputs_mutant[i].append(pickle.load(fr))
             except EOFError:
                 pass
-            
-outputs_lstm=np.array(outputs_lstm)
+
+outputs_deepbot=np.array(outputs_deepbot)
 outputs_dif_avg=[0,]*nb_measures
 outputs_dif_std=[0,]*nb_measures
 for i,mut_id in enumerate(mut_ids):     
     outputs_mutant[i]=np.array(outputs_mutant[i])
-    outputs_dif = np.absolute(outputs_lstm-outputs_mutant[i])
+    outputs_dif = np.absolute(outputs_deepbot-outputs_mutant[i])
     outputs_dif_avg[i] = np.average(outputs_dif)
     outputs_dif_std[i]=np.std(outputs_dif)
 print(outputs_dif_avg)
@@ -60,4 +60,3 @@ plt.errorbar(generations,outputs_dif_avg,yerr=outputs_dif_std, color='orange',ec
 plt.ylabel('Average output difference',fontsize='large')
 plt.xlabel('Generation',fontsize='large')
 plt.savefig('mutation_change.png',dpi=my_dpi)
-

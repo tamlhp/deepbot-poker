@@ -1,13 +1,13 @@
 08:45:42 RQ worker 'rq:worker:7a59cbcb754a4cab93e15d79f20a382c' started, version 1.0
 08:45:42 *** Listening on default...
 08:45:42 Cleaning registries for queue: default
-08:45:42 default: utils_simul.run_one_game(gen_id=0, ini_stack=20000, log_dir='./simul_data', lstm_bot=<bot_LSTMBot.LSTMBot object at 0x7fc5180625f8>, nb_hands=100, sb_amount=50, simul_id=0) (cba9fece-34b0-4ba5-9a84-73389e725f3b)
+08:45:42 default: utils_simul.run_one_game(gen_id=0, ini_stack=20000, log_dir='./simul_data', deepbot=<bot_DeepBot.DeepBot object at 0x7fc5180625f8>, nb_hands=100, sb_amount=50, simul_id=0) (cba9fece-34b0-4ba5-9a84-73389e725f3b)
 08:45:48 default: Job OK (cba9fece-34b0-4ba5-9a84-73389e725f3b)
 08:45:48 Result is kept for 500 seconds
-08:46:09 default: utils_simul.run_one_game(gen_id=0, ini_stack=20000, log_dir='./simul_data', lstm_bot=<bot_LSTMBot.LSTMBot object at 0x7f22421ba518>, nb_hands=100, sb_amount=50, simul_id=0) (3b114c79-e63f-44ef-9298-ae3d4271b752)
+08:46:09 default: utils_simul.run_one_game(gen_id=0, ini_stack=20000, log_dir='./simul_data', deepbot=<bot_DeepBot.DeepBot object at 0x7f22421ba518>, nb_hands=100, sb_amount=50, simul_id=0) (3b114c79-e63f-44ef-9298-ae3d4271b752)
 08:46:15 default: Job OK (3b114c79-e63f-44ef-9298-ae3d4271b752)
 08:46:15 Result is kept for 500 seconds
-08:46:15 default: utils_simul.run_one_game(gen_id=0, ini_stack=20000, log_dir='./simul_data', lstm_bot=<bot_LSTMBot.LSTMBot object at 0x7f22421ba6d8>, nb_hands=100, sb_amount=50, simul_id=0) (6179a05b-2ab7-4ce5-91e8-8d46811f6f16)
+08:46:15 default: utils_simul.run_one_game(gen_id=0, ini_stack=20000, log_dir='./simul_data', deepbot=<bot_DeepBot.DeepBot object at 0x7f22421ba6d8>, nb_hands=100, sb_amount=50, simul_id=0) (6179a05b-2ab7-4ce5-91e8-8d46811f6f16)
 08:46:22 default: Job OK (6179a05b-2ab7-4ce5-91e8-8d46811f6f16)
 08:46:22 Result is kept for 500 seconds
 08:46:30 Warm shut down requested

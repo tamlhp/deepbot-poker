@@ -12,7 +12,7 @@ import os
 import random
 from functools import reduce
 import pickle
-from bot_LSTMBot import LSTMBot
+from bot_DeepBot import DeepBot
 from u_formatting import get_flat_params
 
 ### GENERATE RANDOM BOTS ###
@@ -30,9 +30,9 @@ def gen_rand_bots(gen_dir, network='6max_full', ga_popsize=50, overwrite=True):
         for bot_id in range(1,ga_popsize+1): #there are usually 50 bots
             if not os.path.exists(gen_dir+'/bots/'+str(bot_id)):
                 os.makedirs(gen_dir+'/bots/'+str(bot_id))
-            lstm_bot = LSTMBot(id_= bot_id, full_dict=full_dict, network=network)
-            with open(gen_dir+'/bots/'+str(lstm_bot.id)+'/bot_'+str(lstm_bot.id)+'_flat.pkl', 'wb') as f:
-                pickle.dump(get_flat_params(lstm_bot.full_dict), f, protocol=0)
+            deepbot = DeepBot(id_= bot_id, full_dict=full_dict, network=network)
+            with open(gen_dir+'/bots/'+str(deepbot.id)+'/bot_'+str(deepbot.id)+'_flat.pkl', 'wb') as f:
+                pickle.dump(get_flat_params(deepbot.full_dict), f, protocol=0)
     return
 
 

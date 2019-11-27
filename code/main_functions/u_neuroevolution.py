@@ -13,11 +13,11 @@ from collections import OrderedDict
 import pickle
 import numpy as np
 import torch
-from bot_LSTMBot import LSTMBot
+from bot_DeepBot import DeepBot
 from u_formatting import get_dict_sizes
 
 def select_next_gen_bots(log_dir, simul_id, gen_id, all_earnings, BB, ga_popsize, gen_flat_params, nb_gens= 250, network='6max_full', nb_opps=4, normalize=True, verbose=True):
-    ref_full_dict = LSTMBot(None, network=network).full_dict
+    ref_full_dict = DeepBot(None, network=network).full_dict
 
     ANEs = compute_ANE(all_earnings=all_earnings, BB=BB, ga_popsize=ga_popsize, nb_opps=nb_opps, normalize=normalize, verbose=verbose)
     ord_bot_ids = [el+1 for el in sorted(range(len(ANEs)), key=lambda i:ANEs[i], reverse=True)]

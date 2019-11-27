@@ -9,13 +9,13 @@ Created on Mon Jul  1 18:23:20 2019
 import sys
 sys.path.append('../PyPokerEngine')
 sys.path.append('../poker-simul')
+sys.path.append('../bots')
 from pypokerengine.api.game import setup_config, start_poker
 from bot_TestBot import TestBot
 from bot_CallBot import CallBot
 from bot_PStratBot import PStratBot
-from bot_LSTMBot import LSTMBot
+from bot_DeepBot import DeepBot
 from bot_EquityBot import EquityBot
-from bot_DeepBot import DeepBot #aka Master Bot
 from bot_ManiacBot import ManiacBot
 from bot_CandidBot import CandidBot
 from bot_ConservativeBot import ConservativeBot
@@ -31,7 +31,7 @@ nb_players_6max = 6
 nb_cards = 52
 nb_hands = 250
 my_network = 'second'
-ref_full_dict = LSTMBot(network=my_network).full_dict
+ref_full_dict = DeepBot(network=my_network).full_dict
 
 print('## Starting ##')
 bot_id = 1
@@ -48,16 +48,16 @@ if my_network =='6max_single' or my_network=='6max_full':
         print('starting match '+str(i))
         nb_games = 1
         gen_decks(simul_id=0,gen_id=0, log_dir=log_dir,nb_hands = nb_hands, overwrite=True)
-        ref_full_dict = LSTMBot(network=my_network).full_dict
+        ref_full_dict = DeepBot(network=my_network).full_dict
 
         with open(gen_dir+'/cst_decks.pkl', 'rb') as f:
             cst_decks = pickle.load(f)
         with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
-            lstm_bot_flat = pickle.load(f)
-            #lstm_bot_flat = mutate_bots(orig_bots_flat=[lstm_bot_flat], nb_new_bots=1,
+            deepbot_flat = pickle.load(f)
+            #deepbot_flat = mutate_bots(orig_bots_flat=[deepbot_flat], nb_new_bots=1,
             #                                      mut_rate=0.1, mut_strength=0.18)[0]
-            lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, ref_full_dict = ref_full_dict)
-            lstm_bot = LSTMBot(id_=bot_id, gen_dir = '.', full_dict = lstm_bot_dict, network=my_network, write_details=write_details)
+            deepbot_dict = get_full_dict(all_params = deepbot_flat, ref_full_dict = ref_full_dict)
+            deepbot = DeepBot(id_=bot_id, gen_dir = '.', full_dict = deepbot_dict, network=my_network, write_details=write_details)
 
         #chosenBot=ManiacBot
 
@@ -78,7 +78,7 @@ if my_network =='6max_single' or my_network=='6max_full':
         for k in range(ini_hero_pos):
             config.register_player(name='p-'+str(opp_id), algorithm=opp_tables[table_ind][k]())
             opp_id+=1
-        config.register_player(name="lstm_bot", algorithm= lstm_bot)
+        config.register_player(name="deepbot", algorithm= deepbot)
         opp_id+=1
         for k in range(ini_hero_pos,nb_players_6max-1):
             config.register_player(name='p-'+str(opp_id), algorithm=opp_tables[table_ind][k]())
@@ -99,14 +99,14 @@ if my_network =='6max_single' or my_network=='6max_full':
                 }
         config.set_blind_structure(blind_structure)
 
-        game_result, last_two_players, lstm_rank = start_poker(config, verbose=0, cheat = True,cst_deck_ids = cst_decks.copy(), return_last_two =True, return_lstm_rank = True)
+        game_result, last_two_players, deepbot_rank = start_poker(config, verbose=0, cheat = True,cst_deck_ids = cst_decks.copy(), return_last_two =True, return_deepbot_rank = True)
         my_game_results=-1
-        if lstm_bot.round_count==nb_hands:
+        if deepbot.round_count==nb_hands:
             print('Game could not finish in max number of hands')
             my_game_results = -1
         else:
-            if "lstm_bot" in last_two_players:
+            if "deepbot" in last_two_players:
                 my_game_results=1
             if game_result['players'][5]['stack']>0:
                 my_game_results=3
-        print('rank: '+str(lstm_rank))
+        print('rank: '+str(deepbot_rank))

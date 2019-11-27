@@ -23,7 +23,7 @@ from bot_CallBot import CallBot
 from bot_ConservativeBot import ConservativeBot
 from bot_ManiacBot import ManiacBot
 from bot_PStratBot import PStratBot
-from bot_LSTMBot import LSTMBot
+from bot_DeepBot import DeepBot
 from bot_CandidBot import CandidBot
 from bot_EquityBot import EquityBot
 import random

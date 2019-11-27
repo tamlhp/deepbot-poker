@@ -16,7 +16,7 @@ from pypokerengine.api.game import setup_config, start_poker
 from bot_TestBot import TestBot
 from bot_CallBot import CallBot
 from bot_PStratBot import PStratBot
-from bot_LSTMBot import LSTMBot
+from bot_DeepBot import DeepBot
 from bot_EquityBot import EquityBot
 from bot_DeepBot import DeepBot #aka Master Bot
 from bot_ManiacBot import ManiacBot
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     backed_gen_dir = '../../final_agents/simul_13/gen_150'
 
     print('## Starting ##')
-    ref_full_dict = LSTMBot(network=my_network).full_dict
+    ref_full_dict = DeepBot(network=my_network).full_dict
     #start redis and clear queue
     redis = Redis(REDIS_HOST)
     q = Queue(connection=redis, default_timeout=my_timeout)
@@ -70,16 +70,16 @@ if __name__ == '__main__':
         jobs = []
         for run_id in range(0,100):
             with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
-                lstm_bot_flat = pickle.load(f)
-                lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, ref_full_dict = ref_full_dict)
-                lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
+                deepbot_flat = pickle.load(f)
+                deepbot_dict = get_full_dict(all_params = deepbot_flat, ref_full_dict = ref_full_dict)
+                deepbot = DeepBot(id_=bot_id, gen_dir = None, full_dict = deepbot_dict, network=my_network)
 
             gen_decks(simul_id=simul_id,gen_id=run_id, log_dir=log_dir,nb_hands = nb_hands)
             gen_dir='./simul_data/simul_'+str(simul_id)+'/gen_'+str(run_id)
             with open(gen_dir+'/cst_decks.pkl', 'rb') as f:
                 cst_decks = pickle.load(f)
             cst_decks_match = cst_decks.copy()
-            jobs.append(q.enqueue(run_one_game_rebuys, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)))
+            jobs.append(q.enqueue(run_one_game_rebuys, kwargs = dict(deepbot=deepbot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks)))
 
 
         while(True):
@@ -104,16 +104,16 @@ if __name__ == '__main__':
         jobs = []
         for run_id in range(0,250):
             with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
-                lstm_bot_flat = pickle.load(f)
-                lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, ref_full_dict = ref_full_dict)
-                lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
+                deepbot_flat = pickle.load(f)
+                deepbot_dict = get_full_dict(all_params = deepbot_flat, ref_full_dict = ref_full_dict)
+                deepbot = DeepBot(id_=bot_id, gen_dir = None, full_dict = deepbot_dict, network=my_network)
 
             gen_decks(simul_id=simul_id,gen_id=run_id, log_dir=log_dir,nb_hands = nb_hands, nb_games=nb_games)
             gen_dir='./simul_data/simul_'+str(simul_id)+'/gen_'+str(run_id)
             with open(gen_dir+'/cst_decks.pkl', 'rb') as f:
                 cst_decks = pickle.load(f)
             cst_decks_match = cst_decks.copy()
-            jobs.append(q.enqueue(run_one_game_6max_single, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks, is_validation=True)))
+            jobs.append(q.enqueue(run_one_game_6max_single, kwargs = dict(deepbot=deepbot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks, is_validation=True)))
 
 
         while(True):
@@ -137,16 +137,16 @@ if __name__ == '__main__':
         jobs = []
         for run_id in range(0,250):
             with open(backed_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
-                lstm_bot_flat = pickle.load(f)
-                lstm_bot_dict = get_full_dict(all_params = lstm_bot_flat, ref_full_dict = ref_full_dict)
-                lstm_bot = LSTMBot(id_=bot_id, gen_dir = None, full_dict = lstm_bot_dict, network=my_network)
+                deepbot_flat = pickle.load(f)
+                deepbot_dict = get_full_dict(all_params = deepbot_flat, ref_full_dict = ref_full_dict)
+                deepbot = DeepBot(id_=bot_id, gen_dir = None, full_dict = deepbot_dict, network=my_network)
 
             gen_decks(simul_id=simul_id,gen_id=run_id, log_dir=log_dir,nb_hands = nb_hands, nb_games=nb_games)
             gen_dir='./simul_data/simul_'+str(simul_id)+'/gen_'+str(run_id)
             with open(gen_dir+'/cst_decks.pkl', 'rb') as f:
                 cst_decks = pickle.load(f)
             cst_decks_match = cst_decks.copy()
-            jobs.append(q.enqueue(run_one_game_6max_full, kwargs = dict(lstm_bot=lstm_bot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks, is_validation=True)))
+            jobs.append(q.enqueue(run_one_game_6max_full, kwargs = dict(deepbot=deepbot, ini_stack = ini_stack, sb_amount=sb_amount, nb_hands = nb_hands, cst_decks = cst_decks, is_validation=True)))
 
 
         while(True):

@@ -21,7 +21,7 @@ from u_formatting import reduce_full_dict, extend_full_dict
 
 from networks import Net_HuFirst, Net_HuSecond, Net_6maxSingle, Net_6maxFull
 
-class LSTMBot(BasePokerPlayer):
+class DeepBot(BasePokerPlayer):
     def __init__(self, id_=1, network='6max_full', full_dict = None, validation_mode=None, validation_dir='./simul_data/simul_0/gen_0', validation_id=None):
 
         self.network = network
@@ -326,4 +326,4 @@ def get_sep_dicts(full_dict, network=None):
 
 
 def setup_ai():
-    return LSTMBot()
+    return DeepBot()

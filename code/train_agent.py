@@ -28,7 +28,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--simul_id', default = -1, type=int, help='Id of the simulation. Should be defined to avoid overwriting past simulations.')
     parser.add_argument('--redis_host',  default='local', type=str, help='Address of redis host. [local, ec2, *]')
-    parser.add_argument('--neural_network',  default='6max_full', type=str, help='Neural network architecture to use. [hu_first, hu_second, 6max_single, 6max_full]')
+    parser.add_argument('--network',  default='6max_full', type=str, help='Neural network architecture to use. [hu_first, hu_second, 6max_single, 6max_full]')
     parser.add_argument('--norm_fitfunc', default=True, type=bool, help='Wether to use normalization scheme in the genetic algorithm\'s fitness function.')
     parser.add_argument('--worker_timeout', default=800, type=int, help='Time in seconds before a job taken by a worker and not returned is considered to have timed out.')
     parser.add_argument('--ga_popsize', default=8, type=int, help='Population size of the genetic algorithm.')
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     else:
         REDIS_HOST = args.redis_host
 
-    my_network = args.neural_network
+    my_network = args.network
     my_normalize = args.norm_fitfunc
     my_timeout = args.worker_timeout
     simul_id = args.simul_id
@@ -123,7 +123,7 @@ if __name__ == '__main__':
             ## Getting best earnings
             best_earnings = get_best_ANE_earnings(all_earnings = all_earnings, BB=2*sb_amount, ga_popsize = ga_popsize, nb_opps=nb_opps,normalize=my_normalize)
             print("Best agent score: {}".format(["%.2f" % earning for earning in best_earnings.values()]))
-            # Getting average earning of lstm agents
+            # Getting average earning of deepbots agents
             avg_earnings=[0,]*len(all_earnings[0].values())
             for i in range(ga_popsize):
                 avg_earnings= list(map(add, avg_earnings, all_earnings[i].values()))
@@ -144,8 +144,8 @@ if __name__ == '__main__':
         for bot_id in range(1, ga_popsize+1):
             if not os.path.exists(next_gen_dir+'/bots/'+str(bot_id)):
                 os.makedirs(next_gen_dir+'/bots/'+str(bot_id))
-            lstm_bot_flat = next_gen_bots_flat[bot_id-1]
+            deepbot_flat = next_gen_bots_flat[bot_id-1]
             with open(next_gen_dir+'/bots/'+str(bot_id)+'/bot_'+str(bot_id)+'_flat.pkl', 'wb') as f:
-                pickle.dump(lstm_bot_flat, f)
+                pickle.dump(deepbot_flat, f)
         time_end_evo = time.time()
         if verbose: print("Evolution took {:.0f} seconds.".format(time_end_evo-time_start_evo))

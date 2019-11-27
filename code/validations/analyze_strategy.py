@@ -10,12 +10,12 @@ Created on Mon Jul  1 18:38:22 2019
 import sys
 sys.path.append('../PyPokerEngine')
 sys.path.append('../poker-simul')
+sys.path.append('../bots')
 from pypokerengine.api.game import setup_config, start_poker
 from bot_CallBot import CallBot
 from bot_PStratBot import PStratBot
-from bot_LSTMBot import LSTMBot
+from bot_DeepBot import DeepBot
 from bot_EquityBot import EquityBot
-from bot_DeepBot import DeepBot #aka Master Bot
 from bot_ManiacBot import ManiacBot
 from bot_CandidBot import CandidBot
 from bot_ConservativeBot import ConservativeBot
@@ -74,7 +74,7 @@ if my_network =='6max_single' or my_network=='6max_full':
         if my_network=='6max_full':
             data_dir = '6max_full_'+str(gen)+'_'+str(table_ind)
         if True:
-            csv_file= './analysis_data/'+data_dir+'/declare_action_state.csv'
+            csv_file= '../analysis_data/'+data_dir+'/declare_action_state.csv'
 
             data = pd.read_csv(csv_file, dtype = {'action':str}) #, dtype = {'round_id':int}, 'action_id':int, 'net_input':np.array, 'net_output':int, 'action':str, 'amount':int
             data.net_input = data.net_input.apply(lambda x: x.strip("[]").split(", "))

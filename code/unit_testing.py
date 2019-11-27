@@ -14,7 +14,7 @@ from pypokerengine.api.game import setup_config, start_poker
 from bot_TestBot import TestBot
 from bot_CallBot import CallBot
 from bot_PStratBot import PStratBot
-from bot_LSTMBot import LSTMBot
+from bot_DeepBot import DeepBot
 from bot_EquityBot import EquityBot
 from bot_ManiacBot import ManiacBot
 from bot_CandidBot import CandidBot
@@ -55,10 +55,10 @@ else:
 size_correct = True
 for bot_id in os.listdir(gen_dir+'/bots/'):
     with open(gen_dir+'/bots/'+str(bot_id)+'/'+'/bot_'+str(bot_id)+'_flat.pkl', 'rb') as f:
-        lstm_bot_flat = pickle.load(f)
+        deepbot_flat = pickle.load(f)
         if(my_network =='6max_full'):
-            if len(lstm_bot_flat)!=len_params_6_max_full:
-                print(len(lstm_bot_flat))
+            if len(deepbot_flat)!=len_params_6_max_full:
+                print(len(deepbot_flat))
                 size_correct = False
                 func_correct = False
         else:
@@ -103,21 +103,21 @@ print("\n## Verifying get_flat_params(..) and get_full_dict(..) ##")
 #The test here is performed by verifying that get_flat_params(..)
 # and get_full_dict(..) are inverse functions of one another
 func_correct = True
-ref_full_dict = LSTMBot(network=my_network).full_dict
+ref_full_dict = DeepBot(network=my_network).full_dict
 ##verifying get_flat_params and get_full_dict
-lstm_cre = LSTMBot(network=my_network)
-lstm_cre_flat_params = get_flat_params(lstm_cre.full_dict)
-lstm_cre_full_dict = get_full_dict(all_params = lstm_cre_flat_params, ref_full_dict = ref_full_dict)
-#if(lstm_cre_full_dict == lstm_cre.full_dict):
-if not(lstm_cre_full_dict.keys()==lstm_cre.full_dict.keys()):
+deepbot_cre = DeepBot(network=my_network)
+deepbot_cre_flat_params = get_flat_params(deepbot_cre.full_dict)
+deepbot_cre_full_dict = get_full_dict(all_params = deepbot_cre_flat_params, ref_full_dict = ref_full_dict)
+
+if not(deepbot_cre_full_dict.keys()==deepbot_cre.full_dict.keys()):
     print("[WARNING] Dictionnary keys are not consistent")
     func_correct = False
 else:
     print("Dictionnary keys are consistent")
-#print(lstm_cre_full_dict.values()==lstm_cre.full_dict.values())
+
 val_correct = True
-for key in lstm_cre.full_dict.keys():
-    if lstm_cre.full_dict[key].tolist()!=lstm_cre_full_dict[key].tolist():
+for key in deepbot_cre.full_dict.keys():
+    if deepbot_cre.full_dict[key].tolist()!=deepbot_cre_full_dict[key].tolist():
         val_correct = False
         func_correct = False
 if not val_correct:
@@ -132,9 +132,9 @@ else:
 ####################
 print("\n## Verifying mutate_bots(..) ##")
 func_correct = True
-ref_full_dict = LSTMBot(network=my_network).full_dict
-lstm_first = LSTMBot(id_=1, network=my_network)
-first_flat = get_flat_params(lstm_first.full_dict)
+ref_full_dict = DeepBot(network=my_network).full_dict
+deepbot_first = DeepBot(id_=1, network=my_network)
+first_flat = get_flat_params(deepbot_first.full_dict)
 mut_rate = 0.15
 mut_strength = 0.25
 mutant_flat = mutate_bots(orig_bots_flat=[first_flat], nb_new_bots=1,
@@ -166,14 +166,14 @@ else:
 ####################
 print("\n## Verifying crossover_bots(..) ##")
 func_correct = True
-ref_full_dict = LSTMBot(network=my_network).full_dict
-lstm_first = LSTMBot(id_=1, network=my_network)
-lstm_second = LSTMBot(id_=2, network=my_network)
-cross_flat = crossover_bots([get_flat_params(lstm_first.full_dict),get_flat_params(lstm_second.full_dict)], ref_full_dict = ref_full_dict, nb_new_bots = 1)[0]
+ref_full_dict = DeepBot(network=my_network).full_dict
+deepbot_first = DeepBot(id_=1, network=my_network)
+deepbot_second = DeepBot(id_=2, network=my_network)
+cross_flat = crossover_bots([get_flat_params(deepbot_first.full_dict),get_flat_params(deepbot_second.full_dict)], ref_full_dict = ref_full_dict, nb_new_bots = 1)[0]
 cross_dict = get_full_dict(all_params = cross_flat, ref_full_dict = ref_full_dict)
-lstm_cross = LSTMBot(id_=4, full_dict = cross_dict, network=my_network)
+deepbot_cross = DeepBot(id_=4, full_dict = cross_dict, network=my_network)
 #verifying that key of layers are the same
-if(lstm_cross.full_dict.keys() != lstm_first.full_dict.keys() or lstm_cross.full_dict.keys() != lstm_second.full_dict.keys()):
+if(deepbot_cross.full_dict.keys() != deepbot_first.full_dict.keys() or deepbot_cross.full_dict.keys() != deepbot_second.full_dict.keys()):
     print("[WARNING] Layer structure of child is not consistent with parents.")
 else:
     print("Layer structure of child is consistent with parents.")
@@ -182,7 +182,7 @@ else:
 parent_correct=True
 for key in ref_full_dict:
     if key != 'lin_dec_1.weight':
-        if lstm_cross.full_dict[key].tolist()!=lstm_first.full_dict[key].tolist() and lstm_cross.full_dict[key].tolist()!=lstm_second.full_dict[key].tolist():
+        if deepbot_cross.full_dict[key].tolist()!=deepbot_first.full_dict[key].tolist() and deepbot_cross.full_dict[key].tolist()!=deepbot_second.full_dict[key].tolist():
             parent_correct=False
             func_correct = False
 if parent_correct:
