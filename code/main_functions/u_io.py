@@ -16,7 +16,6 @@ from functools import reduce
 
 def write_declare_action_state(round_id, action_id, net_input, net_output, action, amount, csv_file = './test_declare_action.csv'):
     net_input_cust=list(float(net_input[0][0][i]) for i in range(len(net_input[0][0])))
-    #print(list(net_input)[0][0])
     state_row = [{'round_id': round_id, 'action_id': action_id, 'net_input':net_input_cust, 'net_output':net_output, 'action':action, 'amount':amount}]
     csv_path = reduce(lambda x,y :x+'/'+y, csv_file.split('/')[:-1])
     if not os.path.exists(csv_path):

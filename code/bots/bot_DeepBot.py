@@ -22,7 +22,7 @@ from u_formatting import reduce_full_dict, extend_full_dict
 from networks import Net_HuFirst, Net_HuSecond, Net_6maxSingle, Net_6maxFull
 
 class DeepBot(BasePokerPlayer):
-    def __init__(self, id_=1, network='6max_full', full_dict = None, validation_mode=None, validation_dir='./simul_data/simul_0/gen_0', validation_id=None):
+    def __init__(self, id_=1, network='6max_full', full_dict = None, validation_mode=None, val_data_dir='./val_data_dir', val_id=None):
 
         self.network = network
 
@@ -44,7 +44,8 @@ class DeepBot(BasePokerPlayer):
             self.model=Net_6maxSingle(i_gen)
         elif self.network == '6max_full':
             self.model=Net_6maxFull(i_opp,i_gen)
-
+        else:
+            print('[WARNING] Creating DeepBot without corresponding neural network')
 
         if full_dict == None:
             #define full_dict (state_dict + i_opp + i_gen), it is generated randomly
@@ -62,8 +63,8 @@ class DeepBot(BasePokerPlayer):
 
         self.validation_mode = validation_mode
         if self.validation_mode!=None:
-            self.validation_dir = validation_dir
-            self.validation_id = validation_id
+            self.val_data_dir = val_data_dir
+            self.val_id = val_id
 
 
     #  Define the logic to make an action
@@ -78,13 +79,13 @@ class DeepBot(BasePokerPlayer):
         if self.validation_mode == "decision_analysis":
             self.action_id+=1
             write_declare_action_state(round_id = self.round_count, action_id = self.action_id, net_input=input_tensor, net_output=net_output, action=action, amount = amount,
-                               csv_file = self.validation_dir+'/analysis_data/'+str(self.id)+'/declare_action_state.csv')
+                               csv_file = self.val_data_dir)
         if self.validation_mode == "mutation_variance":
-            with open(self.validation_dir+'/outputs_'+str(self.validation_id)+'.pkl', 'ab') as f:
+            with open(self.val_data_dir+'/outputs_'+str(self.val_id)+'.pkl', 'ab') as f:
                 pickle.dump(net_output, f, protocol=0)
             action, amount = 'fold',0
         if self.validation_mode=="crossover_variance":
-            with open(self.validation_dir+'/outputs_'+str(self.validation_id)+'.pkl', 'ab') as f:
+            with open(self.val_data_dir+'/outputs_'+str(self.val_id)+'.pkl', 'ab') as f:
                 pickle.dump(net_output, f, protocol=0)
             action, amount = 'fold',0
 

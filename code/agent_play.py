@@ -26,7 +26,7 @@ from bot_ConservativeBot import ConservativeBot
 if __name__ == '__main__':
     """ #### PARSE ARGUMENTS #### """
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--agent_file', default = '../data/trained_agents/6max_single/gen_250/bots/1/bot_1_flat.pkl', type=str, help='Path to file of a trained agent (in flat format).')
+    parser.add_argument('--agent_file', default = '../data/trained_agents_git/6max_single/gen_250/bots/1/bot_1_flat.pkl', type=str, help='Path to file of a trained agent (in flat format).')
     parser.add_argument('--network', default = '6max_single', type=str, help='Neural network of the agent. [hu_first, hu_second, 6max_single, 6max_full]')
     parser.add_argument('--table_ind', default = 0, type = int, help='Indice of the table of opponents to play against. For more details open this file')
     parser.add_argument('--max_hands', default=300, type=int, help='Maximum number of hands played in a tournament. If attained, the agent is considered to have lost.')
@@ -72,18 +72,18 @@ if __name__ == '__main__':
                      9*plays_per_blind:{'ante':75, 'small_blind':600},}
     config.set_blind_structure(blind_structure)
 
-    game_result, _, deepbot_rank = start_poker(config, verbose=1, return_last_two = True, return_deepbot_rank = True)
-    my_game_results=-1
-    deepbot_rank+=1
+    game_result, last_two_players, deepbot_rank = start_poker(config, verbose=True, return_last_two = True, return_deepbot_rank = True)
+    earning =- 1
+    deepbot_rank += 1
+    earning=-1
+    ini_hero_pos = 5
     if deepbot.round_count==max_hands:
         print('Game could not finish in max number of hands')
-        my_game_results = -1
+        earning = -1
     else:
-        if int(deepbot_rank) <=2:
-            my_game_results=1
-            deepbot_rank=2
-        if game_result['players'][5]['stack']>0:
-            deepbot_rank = 1
-            my_game_results=3
+        if "deepbot" in last_two_players:
+            earning=1
+        if game_result['players'][ini_hero_pos]['stack']>0:
+            earning=3
     print("\nFinishing place: "+str(deepbot_rank))
-    print("Tokens earned: "+str(my_game_results))
+    print("Tokens earned: "+str(earning))

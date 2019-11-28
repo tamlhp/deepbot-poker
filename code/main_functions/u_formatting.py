@@ -9,6 +9,7 @@ import os
 import pickle
 import torch
 from collections import OrderedDict
+import numpy as np
 
 def get_flat_params(full_dict):
     params = torch.Tensor(0)
@@ -70,3 +71,10 @@ def extend_full_dict(full_dict, network):
                 full_dict['opp_game_h0_'+str(opp_id)+'_'+str(lstm_id)] = full_dict['opp_game_h0_0_'+str(lstm_id)].clone()
                 full_dict['opp_game_c0_'+str(opp_id)+'_'+str(lstm_id)] = full_dict['opp_game_c0_0_'+str(lstm_id)].clone()
     return full_dict
+
+
+def smooth(y, box_pts):
+    box = np.ones(box_pts)/box_pts
+    y_extended = np.hstack(([y[0],]*int(box_pts/2),y,[y[-1],]*int(box_pts/2)))
+    y_smooth = np.convolve(y_extended, box, mode='valid')
+    return y_smooth
