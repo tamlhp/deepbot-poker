@@ -1,3 +1,0 @@
-## CONFIGURATION DETAILS ## 
- 
-Namespace(ga_ini_gen=0, ga_nb_gens=250, ga_popsize=8, ini_stack=1500, log_dir='../data/simul_data', max_hands=300, nb_opps=4, network='6max_full', norm_fitfunc=True, redis_host='local', simul_id=-1, small_blind=10, train_env='fake', verbose=True, worker_timeout=800)

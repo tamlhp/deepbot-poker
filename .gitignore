@@ -1,5 +1,5 @@
 # data
-/data/simul_data/
+/data/trained_agents_and_data/*
 /data/analysis_data/
 
 # Byte-compiled / optimized / DLL files
