@@ -85,3 +85,6 @@ As the various bots developed in this repository, including DeepBot, are compati
 
 ## Contributor
 - Cyril van Schreven
+
+## Supervisors
+- Thanh Tam Nguyen, Karl Aberer
