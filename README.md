@@ -77,11 +77,55 @@ To make a trained agent play a single game, one can use the agent_play script. A
 python3 agent_play.py --network 6max_full --table_ind 2 --agent_file ../data/trained_agents_git/6max_full/gen_300/bots/1/bot_1_flat.pkl
 ```
 This will print information about the actions taken and rewards given at each hand.
-### Validations
-The scripts to perform the validation, be it quantitative or qualitative, are in [./code/validations](https://github.com/tamlhp/deepbot-poker/tree/master/code/validations).
 
 ### GUI
 As the various bots developed in this repository, including DeepBot, are compatible with PyPokerEngine, it is possible to play against them through a GUI. To do so use [PyPokerGUI](https://github.com/ishikota/PyPokerGUI).
+
+### Analysis
+The scripts to perform the validation, be it quantitative or qualitative, are in [./code/validations](https://github.com/tamlhp/deepbot-poker/tree/master/code/validations).
+
+## Analysis
+To validate that the trained bot is able to adapt to different strategies over the course of a game, it was put in games against 4 tables containing different type of opponents.
+Here is the composition of each of the 4 tables and their title:
+
+<p align="center">
+<img src="./docs/report_images/table-composition.png" width="30%"></p>
+<p align="center"><u>Table composition</u></p>
+
+### Quantitative validation
+For the quantitative analysis, the ROI and average rank are measured. The rank can go for 1, the first place, to 6, the last place.
+
+<p align="center">
+<img src="./docs/report_images/rank-poly.png" width="50%"></p>
+<p align="center"><u>ROI and rank</u></p>
+
+### Qualitative analysis
+Finally to see whether the bot has learnt sound strategies, its actions are observed. This can both be used to validate its learning, and to get some insights into what strategies are good.
+
+Actions of the bot are observed over the course of its game. Note that a game is force-ended after 200 hands. We compare this over each table composition, side by side.
+
+We first look at the actions taken by the bot.
+
+<p align="center">
+<img src="./docs/report_images/action-per-hand.png" width="50%"></p>
+<p align="center"><u>Action taken per hand</u></p>
+
+Then we look whether the bot properly sizes its bets and takes into account its stack size.
+
+<p align="center">
+<img src="./docs/report_images/bet-sizing.png" width="50%"></p>
+<p align="center"><u>Bet sizing and bot's stack per hand</u></p>
+
+Then we look how aggressive the bot is and whether it respects the bets of its opponents. We thus look at how often the bot raises on unraised streets (no one raised before), and raised streets (an oponent raised before).
+
+<p align="center">
+<img src="./docs/report_images/street_status.png" width="50%"></p>
+<p align="center"><u>Raise action on  per hand</u></p>
+
+We can see from this that the same trained bot adopts a sounds strategy for each table, and that it is a different strategy for each table. This comes from the memory of the LSTMs.
+
+
+More details and analysis can be found in the [detailed report](https://github.com/tamlhp/deepbot-poker/tree/master/docs/Deepbot_report.pdf).
 
 ## Contributor
 - Cyril van Schreven
